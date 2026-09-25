@@ -1,0 +1,13 @@
+{
+  "name": "apex-forge",
+  "version": "1.0.0",
+  "description": "Apex Forge — The Local-First Modding Canvas for Track & Street Builds",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix at-sim",
+    "build": "npm run build --prefix at-sim",
+    "test": "npm run test --prefix at-sim",
+    "demo": "npm run demo --prefix at-sim",
+    "preview": "npm run preview --prefix at-sim"
+  }
+}
