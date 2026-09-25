@@ -4,6 +4,7 @@ import React from "react";
 import type { Vehicle } from "@/domain/vehicles/types";
 import type { FormattedTelemetry, PartSlotKind, ResolvedBuildParts } from "@/types/tuning.types";
 import { getBodyArchetype, getSideViewGeometry } from "./bodySilhouettes";
+import { getModelSideViewGeometry } from "./modelSilhouettes";
 
 interface BlueprintSideViewProps {
   vehicle: Vehicle;
@@ -38,7 +39,12 @@ export function BlueprintSideView({
   onNodeClick,
 }: BlueprintSideViewProps) {
   const archetype = getBodyArchetype(vehicle.body);
-  const geom = getSideViewGeometry(archetype);
+  const geom = getModelSideViewGeometry(vehicle);
+
+  // Dynamic Stance and Clearance calculation based on installed suspension
+  const dropMm = resolved.suspension?.dropMm ?? 0;
+  const effectiveClearance = Math.max(35, geom.groundClearanceMm - dropMm);
+  const bodyDropY = Math.round(dropMm * 0.22);
 
   const cylLayout = resolved.engine.cylinderLayout ?? (
     resolved.engine.family.toLowerCase().includes("v8") || resolved.engine.cylinders === 8
@@ -129,18 +135,18 @@ export function BlueprintSideView({
             <line x1="230" y1="80" x2="230" y2="430" stroke="rgba(56, 189, 248, 0.2)" strokeDasharray="6 4" strokeWidth="1" />
             <line x1="770" y1="80" x2="770" y2="430" stroke="rgba(56, 189, 248, 0.2)" strokeDasharray="6 4" strokeWidth="1" />
             {/* Ground Clearance dimension arrow */}
-            <line x1="500" y1="410" x2="500" y2="355" stroke="#38bdf8" strokeWidth="1.5" />
+            <line x1="500" y1="410" x2="500" y2={355 + bodyDropY} stroke="#38bdf8" strokeWidth="1.5" />
             <polyline points="496,403 500,410 504,403" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-            <polyline points="496,362 500,355 504,362" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-            <text x="510" y="388" fill="#38bdf8" fontSize="9" fontWeight="bold" fontFamily="monospace">
-              CLEARANCE: {geom.groundClearanceMm} mm
+            <polyline points={`496,${362 + bodyDropY} 500,${355 + bodyDropY} 504,${362 + bodyDropY}`} fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+            <text x="510" y={388 + Math.round(bodyDropY / 2)} fill="#38bdf8" fontSize="9" fontWeight="bold" fontFamily="monospace">
+              CLEARANCE: {effectiveClearance} mm {dropMm > 0 ? `(-${dropMm}mm)` : ""}
             </text>
           </g>
         )}
 
-        {/* --- LAYER 1: CHASSIS SILHOUETTE PROFILE --- */}
+        {/* --- LAYER 1: CHASSIS SILHOUETTE PROFILE (WITH DYNAMIC STANCE DROP) --- */}
         {layers.chassis && (
-          <g id="layer-chassis-side">
+          <g id="layer-chassis-side" transform={`translate(0, ${bodyDropY})`}>
             {/* Outer Monocoque Body Profile */}
             <path
               d={geom.bodyPath}

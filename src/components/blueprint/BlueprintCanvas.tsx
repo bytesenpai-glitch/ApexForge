@@ -187,6 +187,16 @@ export function BlueprintCanvas() {
 
   const archetype = getBodyArchetype(vehicle.body);
   const bodyInfo = BODY_ARCHETYPE_LABELS[archetype] ?? BODY_ARCHETYPE_LABELS.coupe;
+  const hasModelSpecificContour = [
+    "elantra",
+    "stinger",
+    "supra",
+    "silvia",
+    "miata",
+    "golf",
+    "bmw-m3",
+    "mustang",
+  ].some((m) => vehicle.id.toLowerCase().includes(m));
 
   return (
     <div
@@ -212,9 +222,15 @@ export function BlueprintCanvas() {
             <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">
               APEX FORGE // 2D CAD MULTI-PROJECTION ENGINE 2.0
             </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-500/40 font-bold">
-              {bodyInfo.icon} {bodyInfo.badge}
-            </span>
+            {hasModelSpecificContour ? (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 font-bold">
+                ★ МОДЕЛЬНЫЙ СИЛУЭТ ({vehicle.model})
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-500/40 font-bold">
+                {bodyInfo.icon} {bodyInfo.badge}
+              </span>
+            )}
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700">
               ISO 128 CAD STANDARD
             </span>
@@ -384,6 +400,13 @@ export function BlueprintCanvas() {
             );
           })}
         </div>
+
+        {resolved.suspension?.dropMm ? (
+          <div className="flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+            <span>КЛИРЕНС / СТЕНС:</span>
+            <span className="font-bold">-{resolved.suspension.dropMm} mm</span>
+          </div>
+        ) : null}
       </div>
 
       {/* CANVAS PROJECTION CONTAINER */}

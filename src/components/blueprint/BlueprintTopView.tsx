@@ -4,6 +4,7 @@ import React from "react";
 import type { Vehicle } from "@/domain/vehicles/types";
 import type { FormattedTelemetry, PartSlotKind, ResolvedBuildParts } from "@/types/tuning.types";
 import { getBodyArchetype, getTopViewPaths } from "./bodySilhouettes";
+import { getModelTopViewPaths } from "./modelSilhouettes";
 
 interface BlueprintTopViewProps {
   vehicle: Vehicle;
@@ -38,7 +39,7 @@ export function BlueprintTopView({
   onNodeClick,
 }: BlueprintTopViewProps) {
   const archetype = getBodyArchetype(vehicle.body);
-  const silhouette = getTopViewPaths(archetype);
+  const silhouette = getModelTopViewPaths(vehicle);
 
   const isRwd = vehicle.layout === "longitudinal-rwd";
   const isAwd = vehicle.layout.includes("awd");
@@ -221,6 +222,43 @@ export function BlueprintTopView({
               RADIATOR // {resolved.cooling?.code ?? "OEM"}
             </text>
 
+            {/* Front Mount Intercooler (FMIC) with Charge Piping if equipped */}
+            {resolved.intake?.subtype === "fmic" && (
+              <g id="fmic-intercooler-pack">
+                {/* Thick FMIC Core behind bumper */}
+                <rect
+                  x="180"
+                  y="52"
+                  width="240"
+                  height="18"
+                  rx="3"
+                  fill="rgba(6, 182, 212, 0.45)"
+                  stroke="#06b6d4"
+                  strokeWidth="2"
+                  filter="url(#glow-cyan)"
+                />
+                <line x1="180" y1="61" x2="420" y2="61" stroke="#38bdf8" strokeWidth="1" strokeDasharray="3 2" />
+                {/* Polished Aluminum Boost Charge Piping */}
+                <path
+                  d="M 195 70 L 195 140 L 205 170"
+                  fill="none"
+                  stroke="#38bdf8"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 405 70 L 405 130 L 360 160"
+                  fill="none"
+                  stroke="#38bdf8"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <text x="300" y="65" textAnchor="middle" fill="#e0f2fe" fontSize="8" fontWeight="bold" fontFamily="monospace">
+                  FMIC CORE // {resolved.intake.code}
+                </text>
+              </g>
+            )}
+
             <rect x="145" y="95" width="40" height="24" rx="3" fill="#1e293b" stroke="#0ea5e9" strokeWidth="1.5" />
             <rect x="415" y="95" width="40" height="24" rx="3" fill="#1e293b" stroke="#0ea5e9" strokeWidth="1.5" />
 
@@ -239,36 +277,73 @@ export function BlueprintTopView({
         {/* --- LAYER 3: EXHAUST SYSTEM --- */}
         {layers.plumbing && (
           <g id="node-exhaust" className="cursor-pointer" onClick={() => onNodeClick("exhaust")}>
-            <path
-              d="M 330 240 Q 345 280 340 380 L 338 650 Q 338 720 360 790 L 375 850"
-              fill="none"
-              stroke={resolved.isCustomExhaust ? "#06b6d4" : "#f59e0b"}
-              strokeWidth="7"
-              strokeLinecap="round"
-              filter={resolved.isCustomExhaust ? "url(#glow-cyan)" : undefined}
-            />
-            <path
-              d="M 338 690 Q 310 750 240 790 L 225 850"
-              fill="none"
-              stroke={resolved.isCustomExhaust ? "#06b6d4" : "#f59e0b"}
-              strokeWidth="6"
-              strokeLinecap="round"
-            />
-            <rect
-              x="220"
-              y="810"
-              width="160"
-              height="38"
-              rx="6"
-              fill="rgba(15, 23, 42, 0.85)"
-              stroke={resolved.isCustomExhaust ? "#06b6d4" : "#f59e0b"}
-              strokeWidth="1.5"
-            />
-            <circle cx="225" cy="855" r="7" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
-            <circle cx="375" cy="855" r="7" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
-            <text x="300" y="833" textAnchor="middle" fill="#bae6fd" fontSize="9" fontWeight="bold" fontFamily="monospace">
-              EXHAUST: {resolved.exhaust?.code ?? "OEM"}
-            </text>
+            {resolved.exhaust?.id === "exhaust-custom-side-pipe" ? (
+              // Side-exit boom-tube
+              <g id="side-pipe-exhaust">
+                <path
+                  d="M 330 240 Q 345 280 340 380 L 335 500 Q 320 590 112 610"
+                  fill="none"
+                  stroke="#06b6d4"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  filter="url(#glow-cyan)"
+                />
+                <rect x="102" y="596" width="16" height="28" rx="4" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
+                <text x="210" y="565" fill="#bae6fd" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                  BOOM-TUBE SIDE EXIT (112 dB)
+                </text>
+              </g>
+            ) : resolved.exhaust?.id === "exhaust-tomei-titanium" ? (
+              // Single angled cannon
+              <g id="tomei-single-cannon">
+                <path
+                  d="M 330 240 Q 345 280 340 380 L 338 650 Q 338 740 405 820 L 420 865"
+                  fill="none"
+                  stroke="#06b6d4"
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                  filter="url(#glow-cyan)"
+                />
+                <circle cx="420" cy="865" r="9" fill="#0f172a" stroke="#06b6d4" strokeWidth="2.5" />
+                <text x="300" y="833" textAnchor="middle" fill="#bae6fd" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                  TOMEI EXPREME TI (115mm SINGLE CANNON)
+                </text>
+              </g>
+            ) : (
+              // Standard / Quad / Twin
+              <>
+                <path
+                  d="M 330 240 Q 345 280 340 380 L 338 650 Q 338 720 360 790 L 375 850"
+                  fill="none"
+                  stroke={resolved.isCustomExhaust ? "#06b6d4" : "#f59e0b"}
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                  filter={resolved.isCustomExhaust ? "url(#glow-cyan)" : undefined}
+                />
+                <path
+                  d="M 338 690 Q 310 750 240 790 L 225 850"
+                  fill="none"
+                  stroke={resolved.isCustomExhaust ? "#06b6d4" : "#f59e0b"}
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                />
+                <rect
+                  x="220"
+                  y="810"
+                  width="160"
+                  height="38"
+                  rx="6"
+                  fill="rgba(15, 23, 42, 0.85)"
+                  stroke={resolved.isCustomExhaust ? "#06b6d4" : "#f59e0b"}
+                  strokeWidth="1.5"
+                />
+                <circle cx="225" cy="855" r="7" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
+                <circle cx="375" cy="855" r="7" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
+                <text x="300" y="833" textAnchor="middle" fill="#bae6fd" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                  EXHAUST: {resolved.exhaust?.code ?? "OEM"}
+                </text>
+              </>
+            )}
           </g>
         )}
 
@@ -382,15 +457,72 @@ export function BlueprintTopView({
               </text>
             </g>
 
-            {/* Turbocharger Assembly */}
+            {/* Forced Induction / Intake Assembly */}
             {resolved.turbo && (
               <g id="node-turbo" className="cursor-pointer" onClick={() => onNodeClick("turbo")}>
-                <circle cx="205" cy="190" r="22" fill="#0f172a" stroke="#06b6d4" strokeWidth="2.5" filter="url(#glow-cyan)" />
-                <circle cx="205" cy="190" r="10" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
-                <path d="M 205 168 Q 235 150 250 165" fill="none" stroke="#06b6d4" strokeWidth="4" />
-                <text x="205" y="193" textAnchor="middle" fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace">
-                  TURBO
-                </text>
+                {resolved.turbo.subtype === "supercharger" ? (
+                  // Twin-Screw Blower Supercharger
+                  <g id="blower-supercharger">
+                    <rect
+                      x="265"
+                      y="160"
+                      width="70"
+                      height="95"
+                      rx="8"
+                      fill="#0f172a"
+                      stroke="#06b6d4"
+                      strokeWidth="2.5"
+                      filter="url(#glow-cyan)"
+                    />
+                    {/* Blower Twin Rotors */}
+                    <ellipse cx="288" cy="205" rx="14" ry="30" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+                    <ellipse cx="312" cy="205" rx="14" ry="30" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+                    {/* Front Belt Drive Pulley */}
+                    <circle cx="300" cy="148" r="10" fill="#334155" stroke="#0ea5e9" strokeWidth="2" />
+                    <text x="300" y="210" textAnchor="middle" fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace">
+                      BLOWER
+                    </text>
+                  </g>
+                ) : resolved.turbo.subtype === "twin-turbo" ? (
+                  // Symmetrical Twin Turbos
+                  <g id="twin-turbos">
+                    {/* Left Turbo */}
+                    <circle cx="195" cy="195" r="18" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" filter="url(#glow-cyan)" />
+                    <circle cx="195" cy="195" r="8" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+                    <path d="M 195 177 Q 225 160 240 175" fill="none" stroke="#06b6d4" strokeWidth="3" />
+                    {/* Right Turbo */}
+                    <circle cx="405" cy="195" r="18" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" filter="url(#glow-cyan)" />
+                    <circle cx="405" cy="195" r="8" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+                    <path d="M 405 177 Q 375 160 360 175" fill="none" stroke="#06b6d4" strokeWidth="3" />
+                    <text x="195" y="198" textAnchor="middle" fill="#38bdf8" fontSize="7" fontWeight="bold" fontFamily="monospace">
+                      TWIN-T
+                    </text>
+                    <text x="405" y="198" textAnchor="middle" fill="#38bdf8" fontSize="7" fontWeight="bold" fontFamily="monospace">
+                      TWIN-T
+                    </text>
+                  </g>
+                ) : resolved.turbo.subtype === "itb" ? (
+                  // Individual Throttle Bodies (ITB)
+                  <g id="itb-velocity-stacks">
+                    <circle cx="215" cy="170" r="9" fill="#1e293b" stroke="#10b981" strokeWidth="2" />
+                    <circle cx="215" cy="200" r="9" fill="#1e293b" stroke="#10b981" strokeWidth="2" />
+                    <circle cx="215" cy="230" r="9" fill="#1e293b" stroke="#10b981" strokeWidth="2" />
+                    <circle cx="215" cy="260" r="9" fill="#1e293b" stroke="#10b981" strokeWidth="2" />
+                    <text x="215" y="285" textAnchor="middle" fill="#34d399" fontSize="8" fontWeight="bold" fontFamily="monospace">
+                      ITB
+                    </text>
+                  </g>
+                ) : (
+                  // Big Single / Hybrid Turbo
+                  <g id="single-turbo">
+                    <circle cx="205" cy="190" r="24" fill="#0f172a" stroke="#06b6d4" strokeWidth="2.5" filter="url(#glow-cyan)" />
+                    <circle cx="205" cy="190" r="11" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+                    <path d="M 205 166 Q 235 148 250 165" fill="none" stroke="#06b6d4" strokeWidth="4" />
+                    <text x="205" y="194" textAnchor="middle" fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace">
+                      TURBO
+                    </text>
+                  </g>
+                )}
               </g>
             )}
 
