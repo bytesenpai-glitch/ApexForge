@@ -1,4 +1,4 @@
-# Tunesim — Migration & Implementation Tasks (TASKS.md)
+# Apex Forge — Implementation & Deployment Tasks (TASKS.md)
 
 - [x] **Task 1: Core Architecture & Workspace Initialization**
   - [x] Create `AGENTS.md` and `ARCHITECTURE.md` baseline files.
@@ -28,3 +28,11 @@
   - [x] Verify zero TypeScript errors (`tsc --noEmit`).
   - [x] Verify production build compilation (`npm run build`).
   - [x] Eradicate legacy dead code (`App.tsx`, `styles.css`, `main.tsx`) and ensure zero barrel files.
+
+- [x] **Task 6: Rebranding, Root Architecture Promotion & Vercel Automated Deploy**
+  - [x] Rebrand to Apex Forge («BUILT, NOT BOUGHT» — «Apex Forge — The Local-First Modding Canvas for Track & Street Builds»).
+  - [x] Push to GitHub `bytesenpai-glitch/ApexForge`.
+  - [x] Promote Next.js 16 App Router directly to root, eliminating monorepo prefix build failures on Vercel.
+  - [x] Strip legacy `.js` extensions in relative domain imports for Next.js 16 Turbopack compiler.
+  - [x] Add root `vercel.json` and configure production deployment pipeline.
+
