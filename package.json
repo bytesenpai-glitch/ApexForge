@@ -4,10 +4,28 @@
   "description": "Apex Forge — The Local-First Modding Canvas for Track & Street Builds",
   "private": true,
   "scripts": {
-    "dev": "npm run dev --prefix at-sim",
-    "build": "npm run build --prefix at-sim",
-    "test": "npm run test --prefix at-sim",
-    "demo": "npm run demo --prefix at-sim",
-    "preview": "npm run preview --prefix at-sim"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "type-check": "tsc --noEmit",
+    "test": "node --import tsx --test src/domain/parts/swap.test.ts src/domain/parts/bolt_ons.test.ts src/domain/vehicles/catalog.test.ts"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.48.0",
+    "next": "^16.3.5",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^4.3.3",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.9.3"
   }
 }
