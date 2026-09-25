@@ -11,12 +11,14 @@ import {
   Zap,
   Activity,
   SlidersHorizontal,
+  Share2,
 } from "lucide-react";
 import Link from "next/link";
 import { useUiStore } from "@/stores/useUiStore";
 import { useBuildStore } from "@/stores/useBuildStore";
 import { useVehicleStore } from "@/stores/useVehicleStore";
 import { BRAND_LABELS, LAYOUT_LABELS } from "@/constants/tuning";
+import { getFullShareableUrl } from "@/services/shareBuildService";
 
 export function AppHeader() {
   const viewMode = useUiStore((s) => s.viewMode);
@@ -26,6 +28,7 @@ export function AppHeader() {
   const openDrawer = useUiStore((s) => s.openDrawer);
 
   const resetAllToOem = useBuildStore((s) => s.resetAllToOem);
+  const slots = useBuildStore((s) => s.slots);
   const vehicles = useVehicleStore((s) => s.vehicles);
   const selectedVehicleId = useVehicleStore((s) => s.selectedVehicleId);
 
@@ -34,6 +37,18 @@ export function AppHeader() {
   const handleReset = () => {
     resetAllToOem();
     showToast("Все узлы возвращены в заводское состояние (OEM Stock)");
+  };
+
+  const handleShareBuild = async () => {
+    try {
+      const url = getFullShareableUrl(selectedVehicleId, slots);
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        showToast("Ссылка на конфигурацию скопирована в буфер обмена!");
+      }
+    } catch {
+      showToast("Не удалось скопировать ссылку");
+    }
   };
 
   // Keyboard shortcut Ctrl+K / Cmd+K to open engine swap drawer
@@ -144,6 +159,17 @@ export function AppHeader() {
           </span>
           <span className="font-mono">LOCAL-FIRST</span>
         </div>
+
+        {/* Share Build URL Button */}
+        <button
+          type="button"
+          onClick={handleShareBuild}
+          className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-2 sm:px-2.5 text-[11px] font-medium text-slate-300 hover:text-cyan-300 hover:border-cyan-500/40 transition-all cursor-pointer active:scale-95"
+          title="Скопировать ссылку на данную сборку"
+        >
+          <Share2 className="size-3.5 text-cyan-400" />
+          <span className="hidden sm:inline">Поделиться</span>
+        </button>
 
         {/* Reset OEM Button */}
         <button

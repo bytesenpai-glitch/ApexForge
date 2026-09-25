@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   Layers,
   Sliders,
@@ -10,6 +10,10 @@ import {
   Maximize2,
   Minimize2,
   Scan,
+  Download,
+  FileCode,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import { useVehicleStore } from "@/stores/useVehicleStore";
 import { useBuildStore } from "@/stores/useBuildStore";
@@ -20,6 +24,7 @@ import { BRAND_LABELS, LAYOUT_LABELS } from "@/constants/tuning";
 import type { PartSlotKind } from "@/types/tuning.types";
 import { BlueprintTopView } from "./BlueprintTopView";
 import { BlueprintSideView } from "./BlueprintSideView";
+import { EngineeringTitleBlock } from "./EngineeringTitleBlock";
 import { getBodyArchetype } from "./bodySilhouettes";
 
 type CadVisualMode = "dark-cad" | "classic-blueprint" | "stress-heatmap";
@@ -78,9 +83,12 @@ export function BlueprintCanvas() {
   const telemetry = useMemo(() => computeVehicleTelemetry(vehicle, resolved), [vehicle, resolved]);
 
   const openDrawer = useUiStore((s) => s.openDrawer);
+  const showToast = useUiStore((s) => s.showToast);
 
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [cadMode, setCadMode] = useState<CadVisualMode>("dark-cad");
   const [projection, setProjection] = useState<CadProjection>("top");
+  const [showTitleBlock, setShowTitleBlock] = useState(true);
   const [layers, setLayers] = useState<CadLayerConfig>({
     chassis: true,
     powertrain: true,
@@ -98,6 +106,76 @@ export function BlueprintCanvas() {
 
   const handleNodeClick = (slot: PartSlotKind) => {
     openDrawer(slot);
+  };
+
+  const handleExportSvg = () => {
+    if (!canvasContainerRef.current) return;
+    const svgElem = canvasContainerRef.current.querySelector("svg");
+    if (!svgElem) {
+      showToast("Не удалось найти векторный чертеж");
+      return;
+    }
+
+    const serializer = new XMLSerializer();
+    let source = serializer.serializeToString(svgElem);
+    if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+      source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `apex_forge_${vehicle.id}_${projection}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("Векторный чертеж SVG успешно экспортирован!");
+  };
+
+  const handleExportPng = () => {
+    if (!canvasContainerRef.current) return;
+    const svgElem = canvasContainerRef.current.querySelector("svg");
+    if (!svgElem) {
+      showToast("Не удалось найти векторный чертеж");
+      return;
+    }
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgElem);
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 2400;
+      const viewBox = svgElem.viewBox.baseVal;
+      const aspect = viewBox.height / (viewBox.width || 1);
+      canvas.height = Math.round(2400 * aspect);
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = cadMode === "classic-blueprint" ? "#0b274a" : "#020617";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((pngBlob) => {
+          if (pngBlob) {
+            const pngUrl = URL.createObjectURL(pngBlob);
+            const a = document.createElement("a");
+            a.href = pngUrl;
+            a.download = `apex_forge_${vehicle.id}_${projection}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(pngUrl);
+            showToast("Чертеж PNG (Ultra-HD 2400px) успешно сохранен!");
+          }
+        }, "image/png");
+      }
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   };
 
   // Vehicle geometry
@@ -224,6 +302,39 @@ export function BlueprintCanvas() {
             </button>
           </div>
 
+          {/* Export & Technical Stamp Toolbar */}
+          <div className="flex items-center gap-1 rounded-lg p-1 bg-slate-950 border border-slate-800 text-xs">
+            <button
+              type="button"
+              onClick={handleExportSvg}
+              className="flex items-center gap-1 px-2 py-1 rounded font-mono text-slate-300 hover:text-cyan-300 hover:bg-slate-900 transition-colors cursor-pointer"
+              title="Экспортировать векторный чертеж SVG"
+            >
+              <FileCode className="size-3.5 text-cyan-400" />
+              <span>SVG</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPng}
+              className="flex items-center gap-1 px-2 py-1 rounded font-mono text-slate-300 hover:text-cyan-300 hover:bg-slate-900 transition-colors cursor-pointer"
+              title="Экспортировать чертеж в Ultra-HD PNG (2400px)"
+            >
+              <ImageIcon className="size-3.5 text-emerald-400" />
+              <span>PNG</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTitleBlock((v) => !v)}
+              className={`flex items-center gap-1 px-2 py-1 rounded font-mono transition-colors cursor-pointer ${
+                showTitleBlock ? "bg-cyan-500/20 text-cyan-300 font-bold" : "text-slate-400 hover:text-white"
+              }`}
+              title="Показать / скрыть технический штамп чертежа (Title Block)"
+            >
+              <FileText className="size-3.5" />
+              <span className="hidden sm:inline">Штамп</span>
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={resetAllToOem}
@@ -276,7 +387,7 @@ export function BlueprintCanvas() {
       </div>
 
       {/* CANVAS PROJECTION CONTAINER */}
-      <div className="w-full flex flex-col items-center justify-center gap-8 z-10">
+      <div ref={canvasContainerRef} className="w-full flex flex-col items-center justify-center gap-8 z-10">
         {/* SIDE PROFILE VIEW */}
         {(projection === "side" || projection === "dual") && (
           <div className="w-full flex flex-col items-center">
@@ -319,6 +430,18 @@ export function BlueprintCanvas() {
           </div>
         )}
       </div>
+
+      {/* Engineering ISO Title Block */}
+      {showTitleBlock && (
+        <div className="w-full flex justify-end mt-4 mb-2 z-10">
+          <EngineeringTitleBlock
+            vehicle={vehicle}
+            resolved={resolved}
+            telemetry={telemetry}
+            cadMode={cadMode}
+          />
+        </div>
+      )}
 
       {/* Blueprint Footer Interactive Status */}
       <div className="w-full flex items-center justify-between flex-wrap gap-2 pt-4 mt-3 border-t border-slate-800/80 z-10 text-[11px] font-mono text-slate-400">

@@ -9,6 +9,7 @@ interface BuildState {
   equipPart: (slot: PartSlotKind, partId: string) => void;
   resetPart: (slot: PartSlotKind) => void;
   resetAllToOem: () => void;
+  loadSlots: (slots: Partial<ActiveBuildSlots>) => void;
 }
 
 const initialSlots: ActiveBuildSlots = {
@@ -28,6 +29,11 @@ const initialSlots: ActiveBuildSlots = {
 
 export const useBuildStore = create<BuildState>((set) => ({
   slots: initialSlots,
+
+  loadSlots: (loaded) =>
+    set((state) => ({
+      slots: { ...state.slots, ...loaded },
+    })),
 
   equipPart: (slot: PartSlotKind, partId: string) =>
     set((state) => {
