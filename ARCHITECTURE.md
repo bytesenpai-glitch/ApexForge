@@ -59,8 +59,10 @@ src/components/
 │   ├── AppHeader.tsx             # SingularityFleet-style h-14 glassmorphism header, ⌘K search, mode switcher, LOCAL-FIRST badge
 │   └── ToastNotification.tsx     # Micro-feedback for parts swap & reset actions
 ├── blueprint/
-│   ├── BlueprintCanvas.tsx       # Interactive 2D CAD canvas 2.0 (multi-layer toggles, cylinder banks, torque heatmap, dynamic CG reticle)
-│   └── BlueprintLayers.tsx       # Dynamic SVG layer renderer (chassis, powertrain, cooling, drivetrain, suspension, brakes, dimensions)
+│   ├── BlueprintCanvas.tsx       # Multi-projection CAD orchestrator (Top View, Side View, Dual CAD mode)
+│   ├── BlueprintSideView.tsx     # Side-elevation 2D CAD canvas (profile silhouette, coilovers, ground clearance, wheels/brakes)
+│   ├── BlueprintTopView.tsx      # Top-down plan CAD canvas (chassis silhouette, cylinder banks, track width)
+│   └── bodySilhouettes.ts        # Vector contours for 6 body archetypes (Coupe, Sedan, Hatch, Roadster, SUV, Pickup)
 ├── drawer/
 │   ├── NodeSwapDrawer.tsx        # Slide-out drawer with part specs, fitment badge, and one-click equip
 │   └── SwapOptionCard.tsx        # Component card with performance delta and fitment badges
