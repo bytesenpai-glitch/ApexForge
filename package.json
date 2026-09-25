@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "test": "node --import tsx --test src/domain/parts/swap.test.ts src/domain/parts/bolt_ons.test.ts src/domain/vehicles/catalog.test.ts"
+    "test": "node --import tsx --test src/domain/parts/swap.test.ts src/domain/parts/bolt_ons.test.ts src/domain/vehicles/catalog.test.ts src/domain/presets/presets.test.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",

@@ -11,6 +11,7 @@ interface UiState {
   activeTab: PartSlotKind;
   toastMessage: string | null;
   expandedManuals: Record<string, boolean>;
+  isGarageModalOpen: boolean;
 
   setViewMode: (mode: ViewMode) => void;
   openDrawer: (slot: PartSlotKind) => void;
@@ -21,6 +22,8 @@ interface UiState {
   showToast: (msg: string) => void;
   clearToast: () => void;
   toggleManual: (id: string) => void;
+  openGarageModal: () => void;
+  closeGarageModal: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -31,6 +34,7 @@ export const useUiStore = create<UiState>((set) => ({
   activeTab: "engine",
   toastMessage: null,
   expandedManuals: {},
+  isGarageModalOpen: false,
 
   setViewMode: (viewMode) => set({ viewMode }),
   openDrawer: (slot) => set({ activeDrawerSlot: slot, drawerSearch: "", drawerFitment: "all" }),
@@ -40,6 +44,8 @@ export const useUiStore = create<UiState>((set) => ({
   setActiveTab: (activeTab) => set({ activeTab }),
   showToast: (toastMessage) => set({ toastMessage }),
   clearToast: () => set({ toastMessage: null }),
+  openGarageModal: () => set({ isGarageModalOpen: true }),
+  closeGarageModal: () => set({ isGarageModalOpen: false }),
   toggleManual: (id) =>
     set((state) => ({
       expandedManuals: {

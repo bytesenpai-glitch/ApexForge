@@ -12,11 +12,13 @@ import {
   Activity,
   SlidersHorizontal,
   Share2,
+  Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import { useUiStore } from "@/stores/useUiStore";
 import { useBuildStore } from "@/stores/useBuildStore";
 import { useVehicleStore } from "@/stores/useVehicleStore";
+import { useGarageStore } from "@/stores/useGarageStore";
 import { BRAND_LABELS, LAYOUT_LABELS } from "@/constants/tuning";
 import { getFullShareableUrl } from "@/services/shareBuildService";
 
@@ -26,11 +28,13 @@ export function AppHeader() {
   const toastMessage = useUiStore((s) => s.toastMessage);
   const showToast = useUiStore((s) => s.showToast);
   const openDrawer = useUiStore((s) => s.openDrawer);
+  const openGarageModal = useUiStore((s) => s.openGarageModal);
 
   const resetAllToOem = useBuildStore((s) => s.resetAllToOem);
   const slots = useBuildStore((s) => s.slots);
   const vehicles = useVehicleStore((s) => s.vehicles);
   const selectedVehicleId = useVehicleStore((s) => s.selectedVehicleId);
+  const savedBuilds = useGarageStore((s) => s.savedBuilds);
 
   const vehicle = vehicles.find((v) => v.id === selectedVehicleId) ?? vehicles[0];
 
@@ -159,6 +163,20 @@ export function AppHeader() {
           </span>
           <span className="font-mono">LOCAL-FIRST</span>
         </div>
+
+        {/* Curated Presets & Garage Button */}
+        <button
+          type="button"
+          onClick={openGarageModal}
+          className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2 sm:px-2.5 text-[11px] font-bold text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/60 transition-all cursor-pointer active:scale-95 shadow-sm shadow-amber-950/20"
+          title="Культовые пресеты (TCR, Drift, Wangan) и твой сохраненный гараж"
+        >
+          <Trophy className="size-3.5 text-amber-400" />
+          <span className="hidden sm:inline">Пресеты & Гараж</span>
+          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200">
+            {savedBuilds.length}
+          </span>
+        </button>
 
         {/* Share Build URL Button */}
         <button
