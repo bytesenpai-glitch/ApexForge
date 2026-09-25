@@ -126,18 +126,18 @@ export function TelemetryDeck() {
           </div>
         </div>
 
-        {/* Weight & PTW Card */}
+        {/* Weight & Balance Card */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-medium">Масса / P/W</span>
+            <span className="text-xs font-medium">Развесовка / F:R</span>
             <Scale className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
             <div className="text-2xl font-black font-mono text-white tracking-tight">
-              {telemetry.weightKg} <span className="text-xs font-normal text-slate-400">кг</span>
+              {telemetry.frontWeightPct}<span className="text-xs font-normal text-slate-400">:{telemetry.rearWeightPct}%</span>
             </div>
-            <div className="text-[11px] text-emerald-400 font-mono mt-1 font-semibold">
-              {telemetry.ptwRatio} л.с./т
+            <div className="text-[11px] text-cyan-400 font-mono mt-1 font-semibold">
+              {telemetry.weightKg} кг · {telemetry.ptwRatio} л.с./т
             </div>
           </div>
         </div>
@@ -145,21 +145,19 @@ export function TelemetryDeck() {
         {/* Brakes & Safety Card */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-xs font-medium">Торможение 100-0</span>
+            <span className="text-xs font-medium">Тормоза / Охлаждение</span>
             <Disc className="w-4 h-4 text-rose-400" />
           </div>
           <div>
             <div className="text-2xl font-black font-mono text-white tracking-tight">
               {telemetry.brakeDistance}
             </div>
-            <div className="flex items-center gap-1 text-[11px] mt-1">
+            <div className="flex items-center gap-1.5 text-[11px] mt-1">
+              <span className="text-emerald-400 font-mono font-medium">
+                Термо: {telemetry.thermalEnduranceRating}/10
+              </span>
               <Volume2 className="w-3 h-3 text-slate-500" />
               <span className="text-slate-400 font-mono">{telemetry.raw.soundDb} дБ</span>
-              {telemetry.raw.hasBurble && (
-                <span className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-semibold">
-                  POPS
-                </span>
-              )}
             </div>
           </div>
         </div>

@@ -1,17 +1,23 @@
 import { brakes, ecus, exhausts, intakes, suspensions } from "./data/bolt_ons";
+import { cooling } from "./data/cooling";
+import { differentials } from "./data/differentials";
 import { drivelines } from "./data/drivelines";
 import { engines } from "./data/engines";
+import { mounts } from "./data/mounts";
 import { transmissions } from "./data/transmissions";
 import { turbos } from "./data/turbos";
 import type {
   BrakePart,
   ChassisFitment,
+  CoolingPart,
+  DifferentialPart,
   Driveline,
   EcuPart,
   Engine,
   ExhaustPart,
   Fitment,
   IntakePart,
+  MountPart,
   Part,
   SuspensionPart,
   SwapMatch,
@@ -23,6 +29,9 @@ const allPartsList: Part[] = [
   ...engines,
   ...transmissions,
   ...drivelines,
+  ...mounts,
+  ...cooling,
+  ...differentials,
   ...turbos,
   ...intakes,
   ...exhausts,
@@ -106,8 +115,35 @@ export function listSuspensions(): SuspensionPart[] {
   return suspensions;
 }
 
+export function getMount(id: string): MountPart | undefined {
+  const part = byId.get(id);
+  return part?.kind === "mounts" ? part : undefined;
+}
+
+export function getCooling(id: string): CoolingPart | undefined {
+  const part = byId.get(id);
+  return part?.kind === "cooling" ? part : undefined;
+}
+
+export function getDifferential(id: string): DifferentialPart | undefined {
+  const part = byId.get(id);
+  return part?.kind === "differential" ? part : undefined;
+}
+
 export function listEcus(): EcuPart[] {
   return ecus;
+}
+
+export function listMounts(): MountPart[] {
+  return mounts;
+}
+
+export function listCoolings(): CoolingPart[] {
+  return cooling;
+}
+
+export function listDifferentials(): DifferentialPart[] {
+  return differentials;
 }
 
 function shares<T>(a: readonly T[], b: readonly T[]): boolean {

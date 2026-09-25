@@ -36,8 +36,8 @@ graph TD
 | Store Hook | File Location | Purpose & State Managed |
 | :--- | :--- | :--- |
 | **`useVehicleStore`** | `src/stores/useVehicleStore.ts` | Vehicle catalog listing, active vehicle selection, search queries, region & drivetrain filters. |
-| **`useBuildStore`** | `src/stores/useBuildStore.ts` | Active build configuration (engine, gearbox, driveline, turbo, intake, exhaust, brakes, suspension, ECU), equip/reset actions. |
-| **`useUiStore`** | `src/stores/useUiStore.ts` | Active view mode (`garage` vs `blueprint`), active drawer node (`engine`, `transmission`, etc.), search query within drawer, toast alerts. |
+| **`useBuildStore`** | `src/stores/useBuildStore.ts` | Active build configuration (engine, gearbox, driveline, mounts, cooling, diff, turbo, intake, exhaust, brakes, suspension, ECU), equip/reset actions. |
+| **`useUiStore`** | `src/stores/useUiStore.ts` | Active view mode (`garage` vs `blueprint`), active drawer node (`engine`, `mounts`, `cooling`, `differential`, etc.), search query within drawer, toast alerts. |
 
 ---
 
@@ -45,8 +45,8 @@ graph TD
 
 | Service File | Responsibilities |
 | :--- | :--- |
-| **`src/services/telemetryService.ts`** | Computes 0-100 km/h, 100-200 km/h, 1/4 mile ET/trap speed, braking distance, lateral G, and drivetrain torque safety headroom using `@at-sim/parts/telemetry`. |
-| **`src/services/swapService.ts`** | Evaluates compatible swaps for all 9 vehicle nodes (`bolt-in`, `kit`, `custom`) using `listSwaps` and fitment scoring. |
+| **`src/services/telemetryService.ts`** | Computes 0-100 km/h, 100-200 km/h, 1/4 mile ET/trap speed, braking distance, dynamic Front/Rear weight balance (`% F:R`), Center of Gravity (`CG`) offset, thermal endurance index, and drivetrain torque safety headroom. |
+| **`src/services/swapService.ts`** | Evaluates compatible swaps for all 12 vehicle nodes (`bolt-in`, `kit`, `custom`) including adapter plates, tubular subframes, cooling kits, and rear LSD assemblies using `listSwaps` and fitment scoring. |
 | **`src/services/catalogFilterService.ts`**| Multi-criteria filtering and sorting for vehicles and components (by power, year, fitment tier, alphabetical). |
 
 ---
@@ -56,25 +56,20 @@ graph TD
 ```
 src/components/
 ├── layout/
-│   ├── AppHeader.tsx             # Brand header, "BUILT, NOT BOUGHT" banner, mode switch
+│   ├── AppHeader.tsx             # SingularityFleet-style h-14 glassmorphism header, ⌘K search, mode switcher, LOCAL-FIRST badge
 │   └── ToastNotification.tsx     # Micro-feedback for parts swap & reset actions
 ├── blueprint/
-│   ├── BlueprintCanvas.tsx       # 2D CAD Blueprint chassis schematic & grid overlay
-│   ├── BlueprintNodeHotspot.tsx  # Interactive clickable node pins on chassis
-│   └── BlueprintLegend.tsx       # Node status & fitment tier legend
+│   ├── BlueprintCanvas.tsx       # Interactive 2D CAD canvas 2.0 (multi-layer toggles, cylinder banks, torque heatmap, dynamic CG reticle)
+│   └── BlueprintLayers.tsx       # Dynamic SVG layer renderer (chassis, powertrain, cooling, drivetrain, suspension, brakes, dimensions)
 ├── drawer/
-│   ├── NodeSwapDrawer.tsx        # Slide-over swap catalog with search & fitment pills
-│   ├── PartSwapCard.tsx          # Individual part card with OEM specs & delta badges
-│   └── FitmentBadge.tsx          # bolt-in / kit / custom status chips
+│   ├── NodeSwapDrawer.tsx        # Slide-out drawer with part specs, fitment badge, and one-click equip
+│   └── SwapOptionCard.tsx        # Component card with performance delta and fitment badges
 ├── telemetry/
-│   ├── TelemetryDeck.tsx         # Performance KPI summary deck
-│   ├── DynoGaugeCard.tsx         # Power / Torque / Power-to-weight gauges
-│   ├── DragStripCard.tsx         # 0-100, 100-200, 1/4 mile acceleration strip
-│   └── SafetyWarningsCard.tsx    # Drivetrain stress, transmission torque headroom, cooling alerts
+│   ├── TelemetryDeck.tsx         # Real-time KPI deck (Power, Torque, 0-100, F:R Balance, Weight, Thermal Endurance)
+│   └── DynoChart.tsx             # Responsive power & torque curves across RPM band
 └── garage/
-    ├── VehicleSelector.tsx       # Searchable car picker with brand and layout pills
-    ├── VehicleSpecsCard.tsx      # Stock chassis specs, engine bay layout, factory weight
-    └── WorkshopManualAccordion.tsx# Authentic OEM workshop reference cards
+    ├── VehicleSelectorModal.tsx  # Modal vehicle picker with quick filter pills
+    └── PartsConfiguratorTabs.tsx # Categorized hardware tuning tabs (Engine, Transmission, Hardware, Bolt-ons)
 ```
 
 ---

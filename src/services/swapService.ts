@@ -1,27 +1,37 @@
 import {
   getBrake,
+  getCooling,
+  getDifferential,
   getDriveline,
   getEcu,
   getEngine,
   getExhaust,
   getIntake,
+  getMount,
   getSuspension,
   getTransmission,
   getTurbo,
+  listCoolings,
+  listDifferentials,
+  listMounts,
   type BrakePart,
+  type CoolingPart,
+  type DifferentialPart,
   type Driveline,
   type EcuPart,
   type Engine,
   type ExhaustPart,
   type Fitment,
   type IntakePart,
+  type MountPart,
   type Part,
   type SuspensionPart,
   type SwapMatch,
   type Transmission,
   type TurboPart,
-} from "@at-sim/parts";
-import { vehicleSwaps, type Vehicle } from "@at-sim/vehicles";
+} from "@/domain/parts/index";
+import { vehicleSwaps } from "@/domain/vehicles/catalog";
+import type { Vehicle } from "@/domain/vehicles/types";
 import type {
   ActiveBuildSlots,
   PartSlotKind,
@@ -41,6 +51,8 @@ export function resolveBuildParts(
     maker: "hyundai-kia" as const,
     displacementCc: 2000,
     cylinders: 4 as const,
+    cylinderLayout: "inline" as const,
+    weightKg: 155,
     valvetrain: "dohc",
     aspiration: "turbo" as const,
     fuel: "petrol" as const,
@@ -67,6 +79,7 @@ export function resolveBuildParts(
     mountFamilies: vehicle.transMountFamilies,
     bellhousings: ["oem"],
     swapTags: vehicle.swapTags,
+    weightKg: 65,
   };
 
   const stockDlId = vehicle.oem.drivelineIds[0] ?? "dl-stock-open";
@@ -85,6 +98,10 @@ export function resolveBuildParts(
   const transmission = slots.transId ? getTransmission(slots.transId) ?? oemTrans : oemTrans;
   const driveline = slots.drivelineId ? getDriveline(slots.drivelineId) ?? oemDriveline : oemDriveline;
 
+  const mounts = slots.mountId ? getMount(slots.mountId) ?? null : null;
+  const cooling = slots.coolingId ? getCooling(slots.coolingId) ?? null : null;
+  const differential = slots.diffId ? getDifferential(slots.diffId) ?? null : null;
+
   const turbo = slots.turboId ? getTurbo(slots.turboId) ?? null : null;
   const intake = slots.intakeId ? getIntake(slots.intakeId) ?? null : null;
   const exhaust = slots.exhaustId ? getExhaust(slots.exhaustId) ?? null : null;
@@ -96,6 +113,9 @@ export function resolveBuildParts(
     engine,
     transmission,
     driveline,
+    mounts,
+    cooling,
+    differential,
     turbo,
     intake,
     exhaust,
@@ -105,6 +125,9 @@ export function resolveBuildParts(
     isCustomEngine: Boolean(slots.engineId && slots.engineId !== vehicle.oem.engineId),
     isCustomTrans: Boolean(slots.transId && slots.transId !== vehicle.oem.transmissionId),
     isCustomDriveline: Boolean(slots.drivelineId && slots.drivelineId !== stockDlId),
+    isCustomMounts: Boolean(slots.mountId),
+    isCustomCooling: Boolean(slots.coolingId),
+    isCustomDiff: Boolean(slots.diffId),
     isCustomTurbo: Boolean(slots.turboId),
     isCustomIntake: Boolean(slots.intakeId),
     isCustomExhaust: Boolean(slots.exhaustId),
@@ -119,6 +142,27 @@ export function getCompatibleSwapsBySlot(
   slot: PartSlotKind,
   activeEngineId?: string,
 ): SwapMatch[] {
+  if (slot === "mounts") {
+    return listMounts().map((m) => ({
+      part: m,
+      fit: "bolt-in" as Fitment,
+      reasons: ["Прямой крепеж на штатные точки подрамника"],
+    }));
+  }
+  if (slot === "cooling") {
+    return listCoolings().map((c) => ({
+      part: c,
+      fit: "bolt-in" as Fitment,
+      reasons: ["Высокопроизводительное охлаждение контура ДВС"],
+    }));
+  }
+  if (slot === "differential") {
+    return listDifferentials().map((d) => ({
+      part: d,
+      fit: "bolt-in" as Fitment,
+      reasons: ["Усиленный самоблок в штатный корпус редуктора"],
+    }));
+  }
   const allSwaps = vehicleSwaps(vehicle, activeEngineId);
   return allSwaps.filter((s) => s.part.kind === slot);
 }

@@ -21,7 +21,9 @@ export type Layout = "transverse-fwd" | "transverse-awd" | "longitudinal-rwd" | 
 
 export type EngineOrientation = "transverse" | "longitudinal";
 
-export type TransmissionType = "mt" | "at" | "dct" | "ivt";
+export type CylinderLayout = "inline" | "v-engine" | "boxer" | "rotary";
+
+export type TransmissionType = "mt" | "at" | "dct" | "ivt" | "sequential";
 
 export type DrivelineKind = "differential" | "transfer-case";
 
@@ -31,6 +33,9 @@ export type PartKind =
   | "engine"
   | "transmission"
   | "driveline"
+  | "mounts"
+  | "cooling"
+  | "differential"
   | "turbo"
   | "intake"
   | "exhaust"
@@ -55,6 +60,7 @@ export type SwapTag =
   // JDM tags
   | "i4-jdm-rwd"
   | "i6-jdm-rwd"
+  | "v8-jdm-rwd"
   | "i4-honda-fwd"
   | "rotary-rwd"
   | "boxer-awd"
@@ -113,6 +119,8 @@ export interface Engine {
   compressionRatio?: number;
   redlineRpm?: number;
   valvetrain?: string;
+  cylinderLayout?: CylinderLayout;
+  weightKg?: number;
   manualReference?: OemManualReference;
 }
 
@@ -233,10 +241,59 @@ export interface EcuPart {
   notes?: string;
 }
 
+export interface MountPart {
+  id: string;
+  kind: "mounts";
+  code: string;
+  name: string;
+  subtype: "oem-rubber" | "poly-70a" | "poly-95a" | "solid-billet" | "tubular-subframe" | "adapter-plate";
+  maker: string;
+  stiffnessDampingRating: number;
+  engineMovementLimitMm: number;
+  weightDeltaKg: number;
+  vibrationTransmissionRating: number;
+  compatibleMountFamilies?: string[];
+  notes?: string;
+}
+
+export interface CoolingPart {
+  id: string;
+  kind: "cooling";
+  code: string;
+  name: string;
+  subtype: "oem" | "triple-core-radiator" | "dual-oil-cooler" | "dry-sump-kit";
+  maker: string;
+  heatDissipationKw: number;
+  tempDropCoolantC: number;
+  tempDropOilC: number;
+  oilCapacityDeltaL: number;
+  weightDeltaKg: number;
+  gForceStarvationLimit: number;
+  notes?: string;
+}
+
+export interface DifferentialPart {
+  id: string;
+  kind: "differential";
+  code: string;
+  name: string;
+  subtype: "open" | "lsd-1.5way" | "lsd-2way" | "helical-torsen" | "spool" | "quick-change";
+  maker: string;
+  lockRateAccelerationPct: number;
+  lockRateDecelerationPct: number;
+  torqueBiasRatio: number;
+  maxAxleTorqueNm: number;
+  weightDeltaKg: number;
+  notes?: string;
+}
+
 export type Part =
   | Engine
   | Transmission
   | Driveline
+  | MountPart
+  | CoolingPart
+  | DifferentialPart
   | TurboPart
   | IntakePart
   | ExhaustPart

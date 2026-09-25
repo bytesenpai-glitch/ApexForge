@@ -1,5 +1,5 @@
 import type { Fitment, Layout, PartSlotKind, Region, DriveFilter } from "@/types/tuning.types";
-import type { Brand } from "@at-sim/vehicles";
+import type { Brand } from "@/domain/vehicles/types";
 
 export const REGION_LIST: Array<{ id: "all" | Region; label: string; code: string }> = [
   { id: "all", label: "Все регионы (전체)", code: "ALL" },
@@ -84,9 +84,24 @@ export const SLOT_INFO: Record<
     icon: "Cog",
   },
   driveline: {
-    title: "Гудонная часть",
-    subtitle: "구동계 (Differentials & AWD)",
+    title: "Привод / Кардан",
+    subtitle: "구동계 (Propshaft & AWD)",
     icon: "GitBranch",
+  },
+  mounts: {
+    title: "Кронштейны и Плиты",
+    subtitle: "마운트 및 어댑터 (Swap Mounts & Plates)",
+    icon: "Layers",
+  },
+  cooling: {
+    title: "Охлаждение / Масло",
+    subtitle: "냉각 및 윤활 (Radiators & Dry Sump)",
+    icon: "ShieldAlert",
+  },
+  differential: {
+    title: "Дифференциал / LSD",
+    subtitle: "차동장치 (Limited Slip Differential)",
+    icon: "Split",
   },
   turbo: {
     title: "Турбо / Нагнетатель",

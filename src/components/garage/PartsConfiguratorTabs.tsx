@@ -26,12 +26,16 @@ import {
   resolveBuildParts,
 } from "@/services/swapService";
 import type { Fitment, PartSlotKind } from "@/types/tuning.types";
-import type { Engine, Transmission } from "@at-sim/parts";
+import type { CoolingPart, DifferentialPart, Engine, MountPart, Transmission } from "@/domain/parts/types";
+import { Layers, ShieldAlert, Split } from "lucide-react";
 
 const TABS: Array<{ id: PartSlotKind; label: string; icon: React.ElementType }> = [
   { id: "engine", label: "Двигатель (엔진)", icon: Gauge },
   { id: "transmission", label: "КПП (변속기)", icon: Cog },
-  { id: "driveline", label: "Гудонная часть", icon: GitBranch },
+  { id: "driveline", label: "Привод (구동계)", icon: GitBranch },
+  { id: "mounts", label: "Опоры / Плиты", icon: Layers },
+  { id: "cooling", label: "Охлаждение", icon: ShieldAlert },
+  { id: "differential", label: "Дифференциал / LSD", icon: Split },
   { id: "turbo", label: "Турбо / Наддув", icon: Zap },
   { id: "intake", label: "Впуск и FMIC", icon: Wind },
   { id: "exhaust", label: "Выпуск (배기)", icon: Flame },
@@ -189,6 +193,9 @@ export function PartsConfiguratorTabs() {
             if (activeTab === "engine") isEquipped = part.id === resolved.engine.id;
             if (activeTab === "transmission") isEquipped = part.id === resolved.transmission.id;
             if (activeTab === "driveline") isEquipped = part.id === resolved.driveline.id;
+            if (activeTab === "mounts") isEquipped = part.id === resolved.mounts?.id;
+            if (activeTab === "cooling") isEquipped = part.id === resolved.cooling?.id;
+            if (activeTab === "differential") isEquipped = part.id === resolved.differential?.id;
             if (activeTab === "turbo") isEquipped = part.id === resolved.turbo?.id;
             if (activeTab === "intake") isEquipped = part.id === resolved.intake?.id;
             if (activeTab === "exhaust") isEquipped = part.id === resolved.exhaust?.id;

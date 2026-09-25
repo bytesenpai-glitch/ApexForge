@@ -8,7 +8,7 @@ import { useBuildStore } from "@/stores/useBuildStore";
 import { FITMENT_CONFIG, SLOT_INFO } from "@/constants/tuning";
 import { getCompatibleSwapsBySlot, filterAndSortPartSwaps, resolveBuildParts } from "@/services/swapService";
 import type { Fitment } from "@/types/tuning.types";
-import type { Engine, Transmission } from "@at-sim/parts";
+import type { CoolingPart, DifferentialPart, Engine, MountPart, Transmission } from "@/domain/parts/types";
 
 export function NodeSwapDrawer() {
   const activeSlot = useUiStore((s) => s.activeDrawerSlot);
@@ -169,6 +169,9 @@ export function NodeSwapDrawer() {
               if (activeSlot === "engine") isEquipped = part.id === resolved.engine.id;
               if (activeSlot === "transmission") isEquipped = part.id === resolved.transmission.id;
               if (activeSlot === "driveline") isEquipped = part.id === resolved.driveline.id;
+              if (activeSlot === "mounts") isEquipped = part.id === resolved.mounts?.id;
+              if (activeSlot === "cooling") isEquipped = part.id === resolved.cooling?.id;
+              if (activeSlot === "differential") isEquipped = part.id === resolved.differential?.id;
               if (activeSlot === "turbo") isEquipped = part.id === resolved.turbo?.id;
               if (activeSlot === "intake") isEquipped = part.id === resolved.intake?.id;
               if (activeSlot === "exhaust") isEquipped = part.id === resolved.exhaust?.id;
@@ -268,6 +271,57 @@ export function NodeSwapDrawer() {
                           <span className="text-slate-500 block text-[10px]">Предел момента:</span>
                           <span className="font-mono text-emerald-400 font-semibold">
                             до {(part as Transmission).torqueCapacityNm} Н·м
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {part.kind === "mounts" && (
+                      <>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Жесткость / Демпфер:</span>
+                          <span className="font-mono text-emerald-400 font-semibold">
+                            {(part as MountPart).stiffnessDampingRating} / 10
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Люфт смещения ДВС:</span>
+                          <span className="font-mono text-cyan-400 font-semibold">
+                            ±{(part as MountPart).engineMovementLimitMm} мм
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {part.kind === "cooling" && (
+                      <>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Теплоотдача:</span>
+                          <span className="font-mono text-emerald-400 font-semibold">
+                            {(part as CoolingPart).heatDissipationKw} кВт
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Перегрузка без голодания:</span>
+                          <span className="font-mono text-cyan-400 font-semibold">
+                            до {(part as CoolingPart).gForceStarvationLimit} G
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {part.kind === "differential" && (
+                      <>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Блокировка (Разгон/Торможение):</span>
+                          <span className="font-mono text-emerald-400 font-semibold">
+                            {(part as DifferentialPart).lockRateAccelerationPct}% / {(part as DifferentialPart).lockRateDecelerationPct}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Предел момента приводов:</span>
+                          <span className="font-mono text-cyan-400 font-semibold">
+                            до {(part as DifferentialPart).maxAxleTorqueNm} Н·м
                           </span>
                         </div>
                       </>

@@ -1,6 +1,8 @@
 import type {
   BrakePart,
-  BuildTelemetryOutput,
+  CoolingPart,
+  CylinderLayout,
+  DifferentialPart,
   Driveline,
   EcuPart,
   Engine,
@@ -8,12 +10,14 @@ import type {
   Fitment,
   IntakePart,
   Layout,
+  MountPart,
   Part,
   SuspensionPart,
   Transmission,
   TurboPart,
-} from "@at-sim/parts";
-import type { Brand, Region, Vehicle } from "@at-sim/vehicles";
+} from "@/domain/parts/types";
+import type { BuildTelemetryOutput } from "@/domain/parts/telemetry";
+import type { Brand, Region, Vehicle } from "@/domain/vehicles/types";
 
 export type ViewMode = "garage" | "blueprint";
 
@@ -33,6 +37,9 @@ export type PartSlotKind =
   | "engine"
   | "transmission"
   | "driveline"
+  | "mounts"
+  | "cooling"
+  | "differential"
   | "turbo"
   | "intake"
   | "exhaust"
@@ -44,6 +51,9 @@ export interface ActiveBuildSlots {
   engineId: string | null;
   transId: string | null;
   drivelineId: string | null;
+  mountId: string | null;
+  coolingId: string | null;
+  diffId: string | null;
   turboId: string | null;
   intakeId: string | null;
   exhaustId: string | null;
@@ -56,6 +66,9 @@ export interface ResolvedBuildParts {
   engine: Engine;
   transmission: Transmission;
   driveline: Driveline;
+  mounts: MountPart | null;
+  cooling: CoolingPart | null;
+  differential: DifferentialPart | null;
   turbo: TurboPart | null;
   intake: IntakePart | null;
   exhaust: ExhaustPart | null;
@@ -65,6 +78,9 @@ export interface ResolvedBuildParts {
   isCustomEngine: boolean;
   isCustomTrans: boolean;
   isCustomDriveline: boolean;
+  isCustomMounts: boolean;
+  isCustomCooling: boolean;
+  isCustomDiff: boolean;
   isCustomTurbo: boolean;
   isCustomIntake: boolean;
   isCustomExhaust: boolean;
@@ -84,6 +100,9 @@ export interface FormattedTelemetry {
   torqueNm: number;
   weightKg: number;
   ptwRatio: number;
+  frontWeightPct: number;
+  rearWeightPct: number;
+  cgOffsetMm: number;
   zeroTo100: string;
   hundredTo200: string;
   quarterMileEt: string;
@@ -93,7 +112,8 @@ export interface FormattedTelemetry {
   lateralG: string;
   torqueHeadroomNm: number;
   torqueWarning: boolean;
+  thermalEnduranceRating: number;
   raw: BuildTelemetryOutput;
 }
 
-export type { Brand, Region, Vehicle, Fitment, Layout, Part };
+export type { Brand, Region, Vehicle, Fitment, Layout, Part, CylinderLayout, MountPart, CoolingPart, DifferentialPart };

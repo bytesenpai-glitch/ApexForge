@@ -36,17 +36,24 @@
   - [x] Strip legacy `.js` extensions in relative domain imports for Next.js 16 Turbopack compiler.
   - [x] Add root `vercel.json` and configure production deployment pipeline.
 
-- [ ] **Task 7: Swap Parts Catalog & Hardware Expansion**
-  - [ ] Add new iconic engines (K24A2, 2JZ-GTE, VR38DETT, S85 V10, 20B Rotary, LT4 V8, DAZA 2.5T, Porsche 4.0L).
-  - [ ] Implement swap hardware: bellhousing adapter plates, tubular subframes, polyurethane/billet motor mounts.
-  - [ ] Add sequential gearboxes (Samsonas, Quaife), ZF 8HP, and clutch-pack LSDs (Cusco 1.5/2-Way, OS Giken).
-  - [ ] Expand cooling and lubrication: race triple-core radiators, dual oil coolers, dry-sump systems.
-  - [ ] Update `swapService.ts` compatibility scoring and fitment logic.
+- [x] **Task 7: Swap Parts Catalog & Hardware Expansion**
+  - [x] Add new iconic engines (K24A2, 2JZ-GTE, VR38DETT, S85 V10, 20B Rotary, LT4 V8, DAZA 2.5T, Porsche 4.0L Flat-6).
+  - [x] Implement swap hardware: CNC bellhousing adapter plates, tubular swap subframes, polyurethane/billet motor mounts (`mounts.ts`).
+  - [x] Add sequential gearboxes (Samsonas 6-Speed, Quaife QBE69G), Porsche PDK 7-Speed, and clutch-pack LSDs (Cusco 1.5/2-Way, OS Giken Super Lock, Wavetrac, Winters quick-change) (`differentials.ts`).
+  - [x] Expand cooling and lubrication: race triple-core radiators, dual Setrab oil coolers, Peterson dry-sump systems (`cooling.ts`).
+  - [x] Update `swapService.ts` compatibility scoring and fitment logic.
 
-- [ ] **Task 8: 2D CAD Blueprint 2.0 (Multi-Layer Engine & Dimensions)**
-  - [ ] Implement dynamic vehicle dimensions (Wheelbase, Track Width) scaling in SVG.
-  - [ ] Add real-scale engine block visualizer matching cylinder layout (Inline, V-engine, Boxer, Rotary).
-  - [ ] Build multi-layer CAD toggle bar (Chassis, Powertrain, Drivetrain, Suspension, Brakes, Plumbing).
-  - [ ] Add real-time Center of Gravity (CG) marker and dynamic F/R weight balance calculation.
-  - [ ] Add visual modes (Dark CAD, Classic Technical Blueprint, Torque Stress Heatmap).
+- [x] **Task 8: 2D CAD Blueprint 2.0 (Multi-Layer Engine & Dimensions)**
+  - [x] Implement dynamic vehicle dimensions (Wheelbase, Track Width) scaling in SVG with ISO-standard dimension arrows.
+  - [x] Add real-scale engine block visualizer matching cylinder layout (Inline-4/6, V6/V8/V10 angled banks, Boxer Flat-6, and Rotary trochoid chambers).
+  - [x] Build multi-layer CAD toggle bar (Chassis, Powertrain, Cooling, Drivetrain, Suspension, Brakes, Plumbing, Dimensions).
+  - [x] Add real-time Center of Gravity (CG) target reticle and dynamic F/R weight balance calculation (`% F:R`).
+  - [x] Add visual modes (Dark CAD, Classic Technical Blueprint, Torque Stress Heatmap).
+
+- [x] **Task 9: SingularityFleet UI/UX Design System & Navigation**
+  - [x] Build sticky `h-14` glassmorphism topbar (`bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80`).
+  - [x] Add `⌘K` / `Ctrl+K` keyboard shortcut listener for rapid swap drawer access.
+  - [x] Integrate view mode pills (Garage vs CAD Blueprint) with active indicator glow.
+  - [x] Add vehicle status pill with active engine, transmission, power, and layout tags.
+  - [x] Add pulsating green `LOCAL-FIRST` status indicator badge.
 

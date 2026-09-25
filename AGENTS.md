@@ -11,8 +11,11 @@
 
 ## 2. Automotive & Korean Logistics/Engineering Domain Standards
 - **Component Nodes & Terminology**:
-  - Двигатель (엔진 / Internal Combustion Engine): displacement, cylinders, valvetrain, aspiration (`na`, `turbo`, `twin-turbo`, `supercharged`).
-  - Коробка передач (변속기 / Transmission): manual, automatic, DCT, sequential, IVT; gear ratios and torque limits (허용 토크 / Torque Capacity).
+  - Двигатель (엔진 / Internal Combustion Engine): displacement, cylinders, cylinder layout (`inline`, `v-engine`, `boxer`, `rotary`), valvetrain, aspiration (`na`, `turbo`, `twin-turbo`, `supercharged`).
+  - Коробка передач (변속기 / Transmission): manual, automatic, DCT, sequential, dogbox; gear ratios and torque limits (허용 토크 / Torque Capacity).
+  - Опоры и подрамники (엔진 마운트 및 서브프레임 / Engine Mounts & Tubular Subframes): OEM rubber, polyurethane 70A/95A, solid billet, tubular swap crossmembers, CNC bellhousing adapter plates.
+  - Охлаждение и смазка (냉각 및 드라이 섬프 / Cooling Systems & Dry Sump): OEM radiators, triple-pass aluminum race radiators, dual oil coolers (-10AN), multi-stage dry sump lubrication.
+  - Дифференциалы и задний мост (차동기어 및 액슬 / Differential & Rear End): Open diff, 1.5-way / 2-way clutch-type LSD (기계식 LSD), helical Torsen LSD, Winters quick-change, 1000HP axle shafts.
   - Гудонная часть (구동계 / Driveline): open differential, mechanical LSD, electronic LSD, transfer case, AWD coupling.
   - Наддув (과급기 / Forced Induction): single turbo, twin-scroll, twin-turbo, supercharger kits.
   - Впуск (흡기 / Cold Air Intake & Intercooler): high-flow intake, front mount intercooler (FMIC).

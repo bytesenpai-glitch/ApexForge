@@ -15,6 +15,7 @@ export const transmissionsJdm: Transmission[] = [
     bellhousings: [
       "nissan-vq-rwd",
       "toyota-jz-rwd",
+      "toyota-uz-rwd",
       "gm-ls-t56-rwd",
       "honda-k-fwd",
       "adapter-cd009-universal",
@@ -66,7 +67,7 @@ export const transmissionsJdm: Transmission[] = [
     torqueCapacityNm: 520,
     layouts: ["longitudinal-rwd"],
     mountFamilies: ["toyota-jz-longitudinal"],
-    bellhousings: ["toyota-jz-rwd"],
+    bellhousings: ["toyota-jz-rwd", "toyota-uz-rwd"],
     swapTags: ["i6-jdm-rwd", "universal-rwd-swap"],
     gearRatios: [3.250, 1.955, 1.310, 1.000, 0.753],
     finalDrive: 3.727,

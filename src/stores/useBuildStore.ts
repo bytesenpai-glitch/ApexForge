@@ -15,6 +15,9 @@ const initialSlots: ActiveBuildSlots = {
   engineId: null,
   transId: null,
   drivelineId: null,
+  mountId: null,
+  coolingId: null,
+  diffId: null,
   turboId: null,
   intakeId: null,
   exhaustId: null,
@@ -35,6 +38,12 @@ export const useBuildStore = create<BuildState>((set) => ({
           return { slots: { ...state.slots, transId: partId } };
         case "driveline":
           return { slots: { ...state.slots, drivelineId: partId } };
+        case "mounts":
+          return { slots: { ...state.slots, mountId: partId } };
+        case "cooling":
+          return { slots: { ...state.slots, coolingId: partId } };
+        case "differential":
+          return { slots: { ...state.slots, diffId: partId } };
         case "turbo":
           return { slots: { ...state.slots, turboId: partId } };
         case "intake":
@@ -61,6 +70,12 @@ export const useBuildStore = create<BuildState>((set) => ({
           return { slots: { ...state.slots, transId: null } };
         case "driveline":
           return { slots: { ...state.slots, drivelineId: null } };
+        case "mounts":
+          return { slots: { ...state.slots, mountId: null } };
+        case "cooling":
+          return { slots: { ...state.slots, coolingId: null } };
+        case "differential":
+          return { slots: { ...state.slots, diffId: null } };
         case "turbo":
           return { slots: { ...state.slots, turboId: null } };
         case "intake":
