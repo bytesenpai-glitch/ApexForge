@@ -308,7 +308,7 @@ function drivelineFit(chassis: ChassisFitment, item: Driveline): SwapMatch | nul
 
 function turboFit(engine: Engine | undefined, turbo: TurboPart): SwapMatch {
   if (turbo.subtype === "oem") {
-    return { part: turbo, fit: "bolt-in", reasons: ["?авод?кой OEM надд?в / вп??к"] };
+    return { part: turbo, fit: "bolt-in", reasons: ["Заводской OEM наддув / впуск (OEM Turbocharger)"] };
   }
 
   if (turbo.subtype === "itb") {
@@ -316,13 +316,13 @@ function turboFit(engine: Engine | undefined, turbo: TurboPart): SwapMatch {
       return {
         part: turbo,
         fit: "bolt-in",
-        reasons: ["?ногод?о??ел?н?й вп??к (ITB) оп?имизи?ован дл? а?мо??е?ного мо?о?а"],
+        reasons: ["Многодроссельный впуск (독립 스로틀 / ITB) оптимизирован для атмосферного мотора"],
       };
     }
     return {
       part: turbo,
       fit: "custom",
-      reasons: ["Т?еб?е??? пе?еделка ???бокомп?е??о?ного ??ак?а в безнадд?вн?й"],
+      reasons: ["Требуется конверсия турбокомпрессорного тракта в безнаддувный атмосферный ресивер"],
     };
   }
 
@@ -331,13 +331,13 @@ function turboFit(engine: Engine | undefined, turbo: TurboPart): SwapMatch {
       return {
         part: turbo,
         fit: "bolt-in",
-        reasons: ["?ол?-он комплек? ?некового нагне?а?ел? в ?азвал блока V8"],
+        reasons: ["Болт-он комплект шнекового компрессора в развал блока V8 (슈퍼차저 키트)"],
       };
     }
     return {
       part: turbo,
       fit: "kit",
-      reasons: ["?а??омн?е к?он??ейн? к?еплени? п?иводного ?емн? нагне?а?ел?"],
+      reasons: ["Кастомные кронштейны крепления приводного ремня нагнетателя и натяжителя"],
     };
   }
 
@@ -345,97 +345,97 @@ function turboFit(engine: Engine | undefined, turbo: TurboPart): SwapMatch {
     return {
       part: turbo,
       fit: "bolt-in",
-      reasons: ["???ма? замена ??а?ной ???бин? на ?вели?енн?? ?ли?к?"],
+      reasons: ["Прямая замена штатной турбины на увеличенный картридж / холодную часть (대용량 터보)"],
     };
   }
 
   return {
     part: turbo,
     fit: "kit",
-    reasons: ["Т??бо-ки?: ??еб?е??? в?п??кной коллек?о? под ???бин?, ?лив ма?ла и пайпинг"],
+    reasons: ["Турбо-кит: требуется выпускной коллектор под T4/V-band фланец, маслоподача, слив масла и пайпинг"],
   };
 }
 
 function intakeFit(intake: IntakePart): SwapMatch {
   if (intake.subtype === "oem") {
-    return { part: intake, fit: "bolt-in", reasons: ["?авод?кой OEM вп??кной ??ак?"] };
+    return { part: intake, fit: "bolt-in", reasons: ["Заводской OEM впускной тракт (OEM Intake)"] };
   }
   return {
     part: intake,
     fit: "bolt-in",
-    reasons: ["Холодн?й вп??к в ??а?н?е по?адо?н?е ме??а"],
+    reasons: ["Холодный впуск / фронтальный интеркулер в штатные посадочные места (FMIC & Cold Air)"],
   };
 }
 
 function exhaustFit(exhaust: ExhaustPart): SwapMatch {
   if (exhaust.subtype === "oem") {
-    return { part: exhaust, fit: "bolt-in", reasons: ["?авод?ка? в??лопна? ?и??ема"] };
+    return { part: exhaust, fit: "bolt-in", reasons: ["Заводская выхлопная система (OEM Exhaust)"] };
   }
   if (exhaust.subtype === "headers") {
     return {
       part: exhaust,
       fit: "kit",
-      reasons: ["?авнодлинн?е коллек?о?? (??еб?е??? мон?аж ? подгонкой ?лан?ев)"],
+      reasons: ["Равнодлинные выпускные коллекторы: требуется монтаж с подгонкой фланцев (매니폴드 키트)"],
     };
   }
   return {
     part: exhaust,
     fit: "bolt-in",
-    reasons: ["???мо?о?на? ??а??а по ??а?н?м ?о?кам подве?ов к?зова"],
+    reasons: ["Прямоточная трасса по штатным точкам подвесов кузова (볼트온 배기)"],
   };
 }
 
 function brakeFit(brake: BrakePart): SwapMatch {
   if (brake.subtype === "oem") {
-    return { part: brake, fit: "bolt-in", reasons: ["?авод?кие OEM ?о?моза"] };
+    return { part: brake, fit: "bolt-in", reasons: ["Заводские OEM тормоза (OEM Brakes)"] };
   }
   if (brake.subtype === "carbon-ceramic") {
     return {
       part: brake,
       fit: "kit",
-      reasons: ["Угле?од-ке?амика: ??еб????? ??иленн?е пово?о?н?е к?лаки и адап?е??"],
+      reasons: ["Углерод-керамика: требуются усиленные поворотные кулаки и переходные кронштейны (CCB Kit)"],
     };
   }
   return {
     part: brake,
     fit: "bolt-in",
-    reasons: ["Big Brake Kit ?о ??а?н?ми пе?е?одн?ми к?он??ейнами"],
+    reasons: ["Big Brake Kit со штатными переходными кронштейнами суппорта (BBK Bolt-on)"],
   };
 }
 
 function suspensionFit(suspension: SuspensionPart): SwapMatch {
   if (suspension.subtype === "oem") {
-    return { part: suspension, fit: "bolt-in", reasons: ["?авод?ка? OEM подве?ка"] };
+    return { part: suspension, fit: "bolt-in", reasons: ["Заводская OEM подвеска (OEM Suspension)"] };
   }
   if (suspension.subtype === "air-suspension") {
     return {
       part: suspension,
       fit: "kit",
-      reasons: ["?невмоподве?ка: п?окладка пневмомаги???алей, ?е?иве?а и комп?е??о?а"],
+      reasons: ["Пневмоподвеска: прокладка пневмомагистралей, установка ресивера и компрессора (에어 서스펜션)"],
     };
   }
   return {
     part: suspension,
     fit: "bolt-in",
-    reasons: ["?ин?ов?е ??ойки в ??а?н?е ??акан? к?зова"],
+    reasons: ["Винтовые регулируемые стойки (일체형 쇼바 / Coilovers) в штатные стаканы кузова"],
   };
 }
 
 function ecuFit(ecu: EcuPart): SwapMatch {
   if (ecu.subtype === "oem") {
-    return { part: ecu, fit: "bolt-in", reasons: ["?авод?ка? п?о?ивка OEM"] };
+    return { part: ecu, fit: "bolt-in", reasons: ["Заводская прошивка OEM блока управления (OEM ECU)"] };
   }
   if (ecu.subtype === "standalone") {
     return {
       part: ecu,
       fit: "kit",
-      reasons: ["Спо??-Э?У: подкл??ение ?е?ез Plug-and-Play ко?? пе?е?одника"],
+      reasons: ["Спорт-ЭБУ (스탠드얼론 ECU): подключение через переходную косу Plug-and-Play"],
     };
   }
   return {
     part: ecu,
     fit: "bolt-in",
-    reasons: ["??ог?аммн?й ?ле? Э?У ?е?ез завод?кой OBD-II по??"],
+    reasons: ["Программный флеш ЭБУ через заводской OBD-II порт (ECU Remap)"],
   };
 }
 

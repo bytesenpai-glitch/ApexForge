@@ -5,7 +5,7 @@ export const turbos: TurboPart[] = [
     id: "turbo-oem-stock",
     kind: "turbo",
     code: "OEM-STOCK-TURBO",
-    name: "?авод?кой нагне?а?ел? / OEM С?ок",
+    name: "Заводской нагнетатель / OEM Сток (OEM Turbo)",
     subtype: "oem",
     maker: "OEM",
     boostBar: 0.0,
@@ -13,7 +13,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 0,
     spoolRpm: 2000,
     compatibleAspirations: ["na", "turbo", "twin-turbo", "supercharged"],
-    notes: "Ш?а?на? кон?иг??а?и? надд?ва завода-изго?ови?ел?.",
+    notes: "Штатная конфигурация наддува завода-изготовителя (OEM Specification).",
   },
   {
     id: "turbo-stage2-hybrid",
@@ -27,7 +27,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 95,
     spoolRpm: 2600,
     compatibleAspirations: ["turbo", "twin-turbo"],
-    notes: "Увели?енное ??езе?ованное билле?овое комп?е??о?ное коле?о в ??а?ном ?а?зинге. ??????й ?п?л.",
+    notes: "Увеличенное фрезерованное биллетовое компрессорное колесо в штатном хаузинге. Быстрый спул и стабильный наддув.",
   },
   {
     id: "turbo-garrett-g25-660",
@@ -41,7 +41,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 185,
     spoolRpm: 3300,
     compatibleAspirations: ["turbo", "twin-turbo", "na"],
-    notes: "???л??а?ка Mar-M (1050°C), двойной ке?ами?е?кий ?а?икопод?ипник. ?деал?н?й балан? ?п?ла и о?да?и до 660 л.?.",
+    notes: "Крыльчатка Mar-M (1050°C), двойной керамический шарикоподшипник. Идеальный баланс спула и отдачи до 660 л.с.",
   },
   {
     id: "turbo-garrett-g30-770",
@@ -55,7 +55,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 300,
     spoolRpm: 3900,
     compatibleAspirations: ["turbo", "twin-turbo", "na"],
-    notes: "Топов?й ?ингл-???бо дл? мо?о?ов 2.0L??.5L (2JZ, B58, RB26, 4G63, VR38). ?о?ен?иал до 770 л.?.",
+    notes: "Топовый сингл-турбо для моторов 2.0L-3.5L (2JZ, B58, RB26, 4G63, VR38). Потенциал до 770 л.с.",
   },
   {
     id: "turbo-precision-6266-gen2",
@@ -69,7 +69,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 380,
     spoolRpm: 4400,
     compatibleAspirations: ["turbo", "twin-turbo", "na"],
-    notes: "?егенда?н?й д?агов?й ?ингл ? ?е?нологией Competition Engineered Aerodynamics (CEA). ?о 850 л.?.",
+    notes: "Легендарный драговый сингл с технологией Competition Engineered Aerodynamics (CEA). До 850 л.с.",
   },
   {
     id: "turbo-borgwarner-efr-7163",
@@ -83,7 +83,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 215,
     spoolRpm: 2850,
     compatibleAspirations: ["turbo", "twin-turbo", "na"],
-    notes: "Т??бинное коле?о из ?и?ано-ал?минида (Gamma-Ti) ?ве??малой ине??ии. ????оенн?й пе?еп??кной клапан CRV.",
+    notes: "Турбинное колесо из титано-алюминида (Gamma-Ti) сверхмалой инерции. Встроенный перепускной клапан CRV.",
   },
   {
     id: "turbo-hks-gtiii-rs",
@@ -97,7 +97,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 155,
     spoolRpm: 3100,
     compatibleAspirations: ["turbo", "twin-turbo"],
-    notes: "Япон?кий к?л??ов?й ???боки? HKS ? в??око?о?н?м ?а?зингом MHI CHRA дл? о?з?в?ивого го?од?кого ??ека.",
+    notes: "Японский кольцевой турбокит HKS с высокоточным хаузингом MHI CHRA для отзывчивого городского трека.",
   },
   {
     id: "turbo-whipple-29l-supercharger",
@@ -111,7 +111,7 @@ export const turbos: TurboPart[] = [
     torqueGainNm: 280,
     spoolRpm: 1500,
     compatibleAspirations: ["na", "supercharged"],
-    notes: "Шнеков?й нагне?а?ел? об?емного в??е?нени? ? ин?е?к?ле?ом возд??-вода в ?азвале блока. ?гновенна? полка момен?а ? ?оло????.",
+    notes: "Шнековый нагнетатель объемного вытеснения с интеркулером воздух-вода в развале блока. Мгновенная полка момента с холостых.",
   },
   {
     id: "turbo-itb-carbon-plenum",

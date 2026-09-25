@@ -48,24 +48,58 @@ export const LAYOUT_LABELS: Record<Layout, string> = {
   "longitudinal-awd": "Продольный полный (전치종열 사륜 / AWD)",
 };
 
-export const FITMENT_CONFIG: Record<
-  Fitment,
-  { label: string; badgeClass: string; description: string }
-> = {
+export type DisciplineFilter = "all" | "street" | "circuit" | "drift" | "drag";
+
+export const DISCIPLINE_FILTERS: Array<{
+  id: DisciplineFilter;
+  label: string;
+  korean: string;
+  desc: string;
+}> = [
+  { id: "all", label: "Все детали", korean: "전체 (All)", desc: "Полный каталог совместимых компонентов" },
+  { id: "street", label: "Стрит / Дейли", korean: "스트리트 (Street)", desc: "Надёжность, быстрый спул и комфортный отклик" },
+  { id: "circuit", label: "Трек / Кольцо", korean: "트랙/서킷 (Circuit)", desc: "Максимальный держак, термостойкость и баланс" },
+  { id: "drift", label: "Дрифт Спек", korean: "드리프트 (Drift)", desc: "Широкая полка момента, 2-Way блокировка и выворот" },
+  { id: "drag", label: "Драг / High-Boost", korean: "드래그 (Drag 402m)", desc: "Максимальная пиковая мощность и прочность трансмиссии" },
+];
+
+export interface FitmentMeta {
+  label: string;
+  koreanLabel: string;
+  difficultyBadge: string;
+  badgeClass: string;
+  description: string;
+  requirements: string;
+  fabricationRisk: "none" | "medium" | "high";
+}
+
+export const FITMENT_CONFIG: Record<Fitment, FitmentMeta> = {
   "bolt-in": {
-    label: "Bolt-in",
+    label: "Bolt-in (Болт-он)",
+    koreanLabel: "볼트온 (Bolt-in)",
+    difficultyBadge: "Сложность 1/5 · Заводской крепеж",
     badgeClass: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-    description: "Прямая совместимость (볼트온) — стоковые подушки и колокол без доработок",
+    description: "Прямая болт-он установка: заводские опоры, штатный колокол КПП и проводка без сварки и резки",
+    requirements: "Стандартный гаражный набор ключей, заводские разъемы без доработки проводки",
+    fabricationRisk: "none",
   },
   kit: {
-    label: "Kit",
-    badgeClass: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-    description: "Переходной комплект (어댑터 키트) — доступна проверенная переходная плита или кронштейны",
+    label: "Kit Swap (Нужна доработка)",
+    koreanLabel: "스왑 키트 (Kit Swap)",
+    difficultyBadge: "Сложность 3/5 · Требуется адаптер-кит",
+    badgeClass: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    description: "Требуется переходной комплект: плита колокола КПП (스왑 어댑터 플레이트), кастомные подушки ДВС или переходная коса ЭБУ",
+    requirements: "Переходная плита колокола, усиленные кронштейны, удлинитель кулисы КПП",
+    fabricationRisk: "medium",
   },
   custom: {
-    label: "Custom",
-    badgeClass: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-    description: "Индивидуальная подгонка (커스텀 가공) — изменение ориентации, переварка опор или тоннеля",
+    label: "Custom (Полный кастом)",
+    koreanLabel: "커스텀 가공 (Full Custom)",
+    difficultyBadge: "Сложность 5/5 · Полная подгонка кузова",
+    badgeClass: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    description: "Глубокая кастомная инженерия: резка тоннеля пола (변속기 터널 절단), кастомный подрамник, укорачивание кардана и перенос узлов",
+    requirements: "Сварочные работы (TIG/MIG), резка тоннеля, изготовление балансированного карданного вала",
+    fabricationRisk: "high",
   },
 };
 

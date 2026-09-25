@@ -428,13 +428,13 @@ export const ecus: EcuPart[] = [
     id: "ecu-oem-stock",
     kind: "ecu",
     code: "OEM-ECU-MAP",
-    name: "?逵勻棘畇?克逵? 極?棘均?逵劇劇逵 閨剋棘克逵 ?極?逵勻剋筠戟龜? (OEM)",
+    name: "Заводская программа блока управления (OEM Calibration)",
     subtype: "oem",
     maker: "OEM",
     powerMultiplier: 1.0,
     revLimitDeltaRpm: 0,
     features: [],
-    notes: "鬼?逵戟畇逵??戟逵? ?克棘剋棘均龜?筠?克逵? 極?棘?龜勻克逵 ?勻?棘-6 極棘畇 ??-95.",
+    notes: "Стандартная заводская экологическая прошивка Евро-6 под топливо АИ-95.",
   },
   {
     id: "ecu-stage1-remap",
@@ -446,7 +446,7 @@ export const ecus: EcuPart[] = [
     powerMultiplier: 1.14,
     revLimitDeltaRpm: 300,
     features: ["launch-control"],
-    notes: "?極?龜劇龜鈞逵?龜? ?均剋棘勻 鈞逵菌龜均逵戟龜? 龜 克逵?? 戟逵畇畇?勻逵 極棘畇 勻??棘克棘棘克?逵戟棘勻棘筠 ?棘極剋龜勻棘. 鬼戟??龜筠 鈞逵勻棘畇?克棘均棘 棘均?逵戟龜?龜?筠剋? ?克棘?棘??龜 Vmax.",
+    notes: "Оптимизация углов зажигания и карт наддува под высокооктановый бензин. Снятие заводского ограничителя скорости Vmax.",
   },
   {
     id: "ecu-stage2-burble",
@@ -458,7 +458,7 @@ export const ecus: EcuPart[] = [
     powerMultiplier: 1.24,
     revLimitDeltaRpm: 500,
     features: ["burble", "launch-control", "no-lift-shift", "anti-lag"],
-    notes: "?逵剋龜閨?棘勻克逵 極棘畇 極??劇棘?棘?戟?橘 畇逵?戟極逵橘極 龜 龜戟?筠?克?剋筠?. ?棘極克棘?戟 極?龜 ?閨?棘?筠 均逵鈞逵, 剋逵戟?-克棘戟??棘剋? 龜 ?棘剋龜戟均-逵戟?龜剋逵均.",
+    notes: "Калибровка под прямоточный даунпайп и интеркулер. Попкорн при сбросе газа, лаунч-контроль и ролинг-антилаг.",
   },
   {
     id: "ecu-motec-m150",
@@ -470,7 +470,7 @@ export const ecus: EcuPart[] = [
     powerMultiplier: 1.32,
     revLimitDeltaRpm: 850,
     features: ["burble", "launch-control", "no-lift-shift", "anti-lag", "flex-fuel", "traction-control"],
-    notes: "?勻?棘?極棘??龜勻戟?橘 極?棘均?逵劇劇龜??筠劇?橘 閨剋棘克 ?極?逵勻剋筠戟龜?. ?棘?龜剋龜戟畇?棘勻?橘 克棘戟??棘剋? 畇筠?棘戟逵?龜龜, 鈞逵劇克戟???橘 ?龜克剋 Flex-Fuel (E85) 龜 劇戟棘均棘??棘勻戟筠勻?橘 ??筠克?戟-克棘戟??棘剋?.",
+    notes: "Автоспортивный программируемый блок управления. Поцилиндровый контроль детонации, замкнутый цикл Flex-Fuel (E85) и многоуровневый трекшн-контроль.",
   },
   {
     id: "ecu-haltech-elite2500",
