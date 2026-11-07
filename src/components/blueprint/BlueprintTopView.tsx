@@ -26,7 +26,10 @@ interface BlueprintTopViewProps {
     frontTrackMm: number;
     rearTrackMm: number;
   };
+  hoveredSlot?: PartSlotKind | "fuel" | null;
+  selectedSlot?: PartSlotKind | "fuel" | null;
   onNodeClick: (slot: PartSlotKind) => void;
+  onNodeHover?: (slot: PartSlotKind | "fuel" | null) => void;
 }
 
 export function BlueprintTopView({
@@ -36,10 +39,15 @@ export function BlueprintTopView({
   cadMode,
   layers,
   geom,
+  hoveredSlot,
+  selectedSlot,
   onNodeClick,
+  onNodeHover,
 }: BlueprintTopViewProps) {
   const archetype = getBodyArchetype(vehicle.body);
   const silhouette = getModelTopViewPaths(vehicle);
+
+  const isSlotActive = (slot: PartSlotKind | "fuel") => hoveredSlot === slot || selectedSlot === slot;
 
   const isRwd = vehicle.layout === "longitudinal-rwd";
   const isAwd = vehicle.layout.includes("awd");
@@ -120,6 +128,14 @@ export function BlueprintTopView({
           <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="4" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <filter id="glow-inspect" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.8  0 0 0 0 0.95  0 0 0 1 0" result="cyanGlow" />
+            <feMerge>
+              <feMergeNode in="cyanGlow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
         </defs>
 
@@ -205,16 +221,23 @@ export function BlueprintTopView({
 
         {/* --- LAYER 2: COOLING & PLUMBING (RADIATORS & DRY SUMP) --- */}
         {layers.cooling && (
-          <g id="layer-cooling" className="cursor-pointer" onClick={() => onNodeClick("cooling")}>
+          <g
+            id="layer-cooling"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("cooling")}
+            onMouseEnter={() => onNodeHover?.("cooling")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("cooling") ? "url(#glow-inspect)" : undefined}
+          >
             <rect
               x="210"
               y="75"
               width="180"
               height="28"
               rx="4"
-              fill="rgba(30, 58, 138, 0.6)"
-              stroke={resolved.isCustomCooling ? "#38bdf8" : "#0284c7"}
-              strokeWidth="2"
+              fill={isSlotActive("cooling") ? "rgba(30, 64, 175, 0.9)" : "rgba(30, 58, 138, 0.6)"}
+              stroke={isSlotActive("cooling") ? "#38bdf8" : resolved.isCustomCooling ? "#38bdf8" : "#0284c7"}
+              strokeWidth={isSlotActive("cooling") ? "3" : "2"}
             />
             <line x1="210" y1="84" x2="390" y2="84" stroke="#38bdf8" strokeWidth="1" strokeDasharray="4 2" />
             <line x1="210" y1="93" x2="390" y2="93" stroke="#38bdf8" strokeWidth="1" strokeDasharray="4 2" />
@@ -276,7 +299,14 @@ export function BlueprintTopView({
 
         {/* --- LAYER 3: EXHAUST SYSTEM --- */}
         {layers.plumbing && (
-          <g id="node-exhaust" className="cursor-pointer" onClick={() => onNodeClick("exhaust")}>
+          <g
+            id="node-exhaust"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("exhaust")}
+            onMouseEnter={() => onNodeHover?.("exhaust")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("exhaust") ? "url(#glow-inspect)" : undefined}
+          >
             {resolved.exhaust?.id === "exhaust-custom-side-pipe" ? (
               // Side-exit boom-tube
               <g id="side-pipe-exhaust">
@@ -351,20 +381,25 @@ export function BlueprintTopView({
         {layers.powertrain && (
           <g id="layer-powertrain">
             {/* Engine Swap Subframe / Billet Motor Mounts */}
-            <g id="node-mounts" className="cursor-pointer" onClick={() => onNodeClick("mounts")}>
+            <g
+              id="node-mounts"
+              className="cursor-pointer transition-all duration-200"
+              onClick={() => onNodeClick("mounts")}
+              onMouseEnter={() => onNodeHover?.("mounts")}
+              onMouseLeave={() => onNodeHover?.(null)}
+              filter={isSlotActive("mounts") ? "url(#glow-inspect)" : resolved.isCustomMounts ? "url(#glow-emerald)" : undefined}
+            >
               <path
                 d="M 180 180 L 210 200 L 210 240 L 180 260 Z"
                 fill="#1e293b"
                 stroke={resolved.isCustomMounts ? "#10b981" : "#475569"}
-                strokeWidth="2"
-                filter={resolved.isCustomMounts ? "url(#glow-emerald)" : undefined}
+                strokeWidth={isSlotActive("mounts") ? "3" : "2"}
               />
               <path
                 d="M 420 180 L 390 200 L 390 240 L 420 260 Z"
                 fill="#1e293b"
                 stroke={resolved.isCustomMounts ? "#10b981" : "#475569"}
-                strokeWidth="2"
-                filter={resolved.isCustomMounts ? "url(#glow-emerald)" : undefined}
+                strokeWidth={isSlotActive("mounts") ? "3" : "2"}
               />
               <line
                 x1="180"
@@ -372,13 +407,20 @@ export function BlueprintTopView({
                 x2="420"
                 y2="220"
                 stroke={resolved.isCustomMounts ? "#10b981" : "#334155"}
-                strokeWidth="4"
+                strokeWidth={isSlotActive("mounts") ? "5" : "4"}
                 strokeDasharray={resolved.isCustomMounts ? "none" : "6 4"}
               />
             </g>
 
             {/* Engine Block with Scale-Accurate Cylinder Layout */}
-            <g id="node-engine" className="cursor-pointer" onClick={() => onNodeClick("engine")}>
+            <g
+              id="node-engine"
+              className="cursor-pointer transition-all duration-200"
+              onClick={() => onNodeClick("engine")}
+              onMouseEnter={() => onNodeHover?.("engine")}
+              onMouseLeave={() => onNodeHover?.(null)}
+              filter={isSlotActive("engine") ? "url(#glow-inspect)" : resolved.isCustomEngine ? "url(#glow-cyan)" : undefined}
+            >
               {/* Outer Block Envelope */}
               <rect
                 x={isTransverse ? "220" : "235"}
@@ -459,7 +501,14 @@ export function BlueprintTopView({
 
             {/* Forced Induction / Intake Assembly */}
             {resolved.turbo && (
-              <g id="node-turbo" className="cursor-pointer" onClick={() => onNodeClick("turbo")}>
+              <g
+                id="node-turbo"
+                className="cursor-pointer transition-all duration-200"
+                onClick={() => onNodeClick("turbo")}
+                onMouseEnter={() => onNodeHover?.("turbo")}
+                onMouseLeave={() => onNodeHover?.(null)}
+                filter={isSlotActive("turbo") ? "url(#glow-inspect)" : undefined}
+              >
                 {resolved.turbo.subtype === "supercharger" ? (
                   // Twin-Screw Blower Supercharger
                   <g id="blower-supercharger">
@@ -528,7 +577,14 @@ export function BlueprintTopView({
 
             {/* Cold Air Intake */}
             {layers.plumbing && (
-              <g id="node-intake" className="cursor-pointer" onClick={() => onNodeClick("intake")}>
+              <g
+                id="node-intake"
+                className="cursor-pointer transition-all duration-200"
+                onClick={() => onNodeClick("intake")}
+                onMouseEnter={() => onNodeHover?.("intake")}
+                onMouseLeave={() => onNodeHover?.(null)}
+                filter={isSlotActive("intake") ? "url(#glow-inspect)" : undefined}
+              >
                 <rect x="145" y="140" width="34" height="42" rx="4" fill="#1e293b" stroke="#10b981" strokeWidth="1.5" />
                 <path d="M 179 161 Q 195 161 205 175" fill="none" stroke="#10b981" strokeWidth="3" />
                 <text x="162" y="165" textAnchor="middle" fill="#a7f3d0" fontSize="7" fontWeight="bold" fontFamily="monospace">
@@ -543,7 +599,14 @@ export function BlueprintTopView({
         {layers.drivetrain && (
           <g id="layer-drivetrain">
             {/* Gearbox / Transmission */}
-            <g id="node-transmission" className="cursor-pointer" onClick={() => onNodeClick("transmission")}>
+            <g
+              id="node-transmission"
+              className="cursor-pointer transition-all duration-200"
+              onClick={() => onNodeClick("transmission")}
+              onMouseEnter={() => onNodeHover?.("transmission")}
+              onMouseLeave={() => onNodeHover?.(null)}
+              filter={isSlotActive("transmission") ? "url(#glow-inspect)" : isTransOverloaded ? "url(#glow-amber)" : undefined}
+            >
               <rect
                 x="260"
                 y={isTransverse ? "230" : "290"}
@@ -580,7 +643,14 @@ export function BlueprintTopView({
             )}
 
             {/* Rear Differential Assembly */}
-            <g id="node-differential" className="cursor-pointer" onClick={() => onNodeClick("differential")}>
+            <g
+              id="node-differential"
+              className="cursor-pointer transition-all duration-200"
+              onClick={() => onNodeClick("differential")}
+              onMouseEnter={() => onNodeHover?.("differential")}
+              onMouseLeave={() => onNodeHover?.(null)}
+              filter={isSlotActive("differential") || isSlotActive("driveline") ? "url(#glow-inspect)" : undefined}
+            >
               <rect
                 x="265"
                 y="665"
@@ -588,8 +658,8 @@ export function BlueprintTopView({
                 height="65"
                 rx="8"
                 fill="#0f172a"
-                stroke={diffColor}
-                strokeWidth="2.5"
+                stroke={isSlotActive("differential") ? "#38bdf8" : diffColor}
+                strokeWidth={isSlotActive("differential") ? "3" : "2.5"}
               />
               <circle cx="300" cy="697" r="16" fill="#1e293b" stroke={diffColor} strokeWidth="2" />
               <text x="300" y="700" textAnchor="middle" fill="#bae6fd" fontSize="8" fontWeight="bold" fontFamily="monospace">
@@ -607,9 +677,35 @@ export function BlueprintTopView({
           </g>
         )}
 
-        {/* --- LAYER 6: SUSPENSION & CONTROL ARMS --- */}
+        {/* --- LAYER 6: SUSPENSION, STEERING & CONTROL ARMS --- */}
         {layers.suspension && (
-          <g id="node-suspension" className="cursor-pointer" onClick={() => onNodeClick("suspension")}>
+          <g
+            id="node-suspension"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("suspension")}
+            onMouseEnter={() => onNodeHover?.("suspension")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("suspension") ? "url(#glow-inspect)" : undefined}
+          >
+            {/* Steering Rack & Tie-Rods */}
+            <g id="steering-rack">
+              <rect x="230" y="172" width="140" height="8" rx="2" fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
+              <line x1="130" y1="184" x2="230" y2="176" stroke="#94a3b8" strokeWidth="2.5" />
+              <line x1="470" y1="184" x2="370" y2="176" stroke="#94a3b8" strokeWidth="2.5" />
+              <circle cx="230" cy="176" r="3" fill="#38bdf8" />
+              <circle cx="370" cy="176" r="3" fill="#38bdf8" />
+            </g>
+
+            {/* Front Anti-Roll Sway Bar */}
+            <path
+              d="M 140 220 L 210 245 L 390 245 L 460 220"
+              fill="none"
+              stroke="#f59e0b"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="6 2"
+            />
+
             {/* Front Wishbones / MacPherson Arms */}
             <polygon points="140,195 200,210 140,225" fill="none" stroke={resolved.isCustomSuspension ? "#10b981" : "#0ea5e9"} strokeWidth="2.5" />
             <polygon points="460,195 400,210 460,225" fill="none" stroke={resolved.isCustomSuspension ? "#10b981" : "#0ea5e9"} strokeWidth="2.5" />
@@ -621,7 +717,14 @@ export function BlueprintTopView({
 
         {/* --- LAYER 7: BRAKES & WHEEL HUBS --- */}
         {layers.brakes && (
-          <g id="node-brakes" className="cursor-pointer" onClick={() => onNodeClick("brakes")}>
+          <g
+            id="node-brakes"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("brakes")}
+            onMouseEnter={() => onNodeHover?.("brakes")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("brakes") ? "url(#glow-inspect)" : undefined}
+          >
             {/* Front-Left Brake & Wheel */}
             <rect x="75" y="165" width="45" height="90" rx="6" fill="#1e293b" stroke="#475569" strokeWidth="2" />
             <rect x="120" y="180" width="12" height="60" rx="3" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
@@ -646,7 +749,14 @@ export function BlueprintTopView({
 
         {/* --- LAYER 7.5: PERFORMANCE EXHAUST ROUTING --- */}
         {layers.plumbing && (
-          <g id="node-exhaust" className="cursor-pointer" onClick={() => onNodeClick("exhaust")}>
+          <g
+            id="node-exhaust-tips"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("exhaust")}
+            onMouseEnter={() => onNodeHover?.("exhaust")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("exhaust") ? "url(#glow-inspect)" : undefined}
+          >
             {/* Downpipe from engine manifold */}
             <path
               d={isTransverse ? "M 310 240 Q 325 360 320 440 L 320 620 Q 320 680 340 730 L 340 765" : "M 325 260 Q 340 380 325 440 L 325 620 Q 325 680 340 730 L 340 765"}
@@ -665,6 +775,41 @@ export function BlueprintTopView({
             {/* Dual Exhaust Tips */}
             <rect x="315" y="750" width="10" height="20" rx="3" fill="#cbd5e1" stroke="#38bdf8" strokeWidth="1" />
             <rect x="355" y="750" width="10" height="20" rx="3" fill="#cbd5e1" stroke="#38bdf8" strokeWidth="1" />
+          </g>
+        )}
+
+        {/* --- LAYER 7.8: PERFORMANCE FUEL SYSTEM & DUAL PUMP HAT --- */}
+        {layers.plumbing && (
+          <g
+            id="node-fuel-system"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("cooling")}
+            onMouseEnter={() => onNodeHover?.("fuel")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("fuel") ? "url(#glow-inspect)" : undefined}
+          >
+            {/* Fuel Tank ahead of rear axle */}
+            <rect
+              x="220"
+              y="590"
+              width="160"
+              height="65"
+              rx="8"
+              fill={isSlotActive("fuel") ? "rgba(88, 28, 135, 0.8)" : "#0f172a"}
+              stroke={isSlotActive("fuel") ? "#e879f9" : "#a855f7"}
+              strokeWidth={isSlotActive("fuel") ? "3" : "2"}
+              strokeDasharray="4 2"
+            />
+            {/* Dual In-Tank Fuel Pumps Billet Hat */}
+            <circle cx="300" cy="622" r="14" fill="#581c87" stroke="#c084fc" strokeWidth="2" />
+            <circle cx="295" cy="622" r="4" fill="#a855f7" />
+            <circle cx="305" cy="622" r="4" fill="#a855f7" />
+            <text x="300" y="645" textAnchor="middle" fill="#d8b4fe" fontSize="7" fontWeight="bold" fontFamily="monospace">
+              FUEL TANK // DUAL 450LPH
+            </text>
+            {/* Braided -8AN PTFE Fuel Feed & Return Lines running along tunnel to fuel rail */}
+            <path d="M 292 615 L 292 380 L 278 260 L 278 200" fill="none" stroke="#c084fc" strokeWidth="2" strokeDasharray="6 3" />
+            <path d="M 308 615 L 308 380 L 322 260 L 322 200" fill="none" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="6 3" />
           </g>
         )}
 

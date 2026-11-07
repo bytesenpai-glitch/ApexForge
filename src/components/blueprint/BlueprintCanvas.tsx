@@ -26,6 +26,7 @@ import type { PartSlotKind } from "@/types/tuning.types";
 import { BlueprintTopView } from "./BlueprintTopView";
 import { BlueprintSideView } from "./BlueprintSideView";
 import { EngineeringTitleBlock } from "./EngineeringTitleBlock";
+import { CadInspectorHud } from "./CadInspectorHud";
 import { getBodyArchetype } from "./bodySilhouettes";
 
 type CadVisualMode = "dark-cad" | "classic-blueprint" | "stress-heatmap";
@@ -44,19 +45,31 @@ interface CadLayerConfig {
 
 const VEHICLE_GEOMETRY_SPECS: Record<string, { wheelbaseMm: number; frontTrackMm: number; rearTrackMm: number }> = {
   "elantra-n": { wheelbaseMm: 2720, frontTrackMm: 1585, rearTrackMm: 1581 },
-  "stinger-gt": { wheelbaseMm: 2905, frontTrackMm: 1596, rearTrackMm: 1619 },
-  "g70-33t": { wheelbaseMm: 2835, frontTrackMm: 1595, rearTrackMm: 1604 },
+  "stinger": { wheelbaseMm: 2905, frontTrackMm: 1596, rearTrackMm: 1619 },
+  "g70": { wheelbaseMm: 2835, frontTrackMm: 1595, rearTrackMm: 1604 },
   "miata-na": { wheelbaseMm: 2265, frontTrackMm: 1410, rearTrackMm: 1425 },
   "miata-nd": { wheelbaseMm: 2310, frontTrackMm: 1495, rearTrackMm: 1505 },
   "silvia-s15": { wheelbaseMm: 2525, frontTrackMm: 1470, rearTrackMm: 1460 },
-  "gtr-r35": { wheelbaseMm: 2780, frontTrackMm: 1590, rearTrackMm: 1600 },
+  "gtr": { wheelbaseMm: 2780, frontTrackMm: 1590, rearTrackMm: 1600 },
   "supra-a80": { wheelbaseMm: 2550, frontTrackMm: 1520, rearTrackMm: 1525 },
   "supra-a90": { wheelbaseMm: 2470, frontTrackMm: 1594, rearTrackMm: 1589 },
   "bmw-m3-e46": { wheelbaseMm: 2731, frontTrackMm: 1508, rearTrackMm: 1525 },
-  "bmw-m3-g80": { wheelbaseMm: 2857, frontTrackMm: 1617, rearTrackMm: 1605 },
-  "golf-r-mk7": { wheelbaseMm: 2631, frontTrackMm: 1535, rearTrackMm: 1506 },
-  "porsche-992-gt3": { wheelbaseMm: 2457, frontTrackMm: 1601, rearTrackMm: 1553 },
-  "mustang-s550": { wheelbaseMm: 2720, frontTrackMm: 1582, rearTrackMm: 1655 },
+  "bmw-m3-e92": { wheelbaseMm: 2760, frontTrackMm: 1540, rearTrackMm: 1539 },
+  "bmw-m3": { wheelbaseMm: 2857, frontTrackMm: 1617, rearTrackMm: 1605 },
+  "golf-r": { wheelbaseMm: 2631, frontTrackMm: 1535, rearTrackMm: 1506 },
+  "porsche": { wheelbaseMm: 2457, frontTrackMm: 1601, rearTrackMm: 1553 },
+  "992": { wheelbaseMm: 2457, frontTrackMm: 1601, rearTrackMm: 1553 },
+  "mustang": { wheelbaseMm: 2720, frontTrackMm: 1582, rearTrackMm: 1655 },
+  "shelby": { wheelbaseMm: 2720, frontTrackMm: 1606, rearTrackMm: 1633 },
+  "corvette": { wheelbaseMm: 2685, frontTrackMm: 1613, rearTrackMm: 1588 },
+  "lancer-evo": { wheelbaseMm: 2625, frontTrackMm: 1515, rearTrackMm: 1515 },
+  "evolution": { wheelbaseMm: 2625, frontTrackMm: 1515, rearTrackMm: 1515 },
+  "civic-type-r": { wheelbaseMm: 2360, frontTrackMm: 1480, rearTrackMm: 1480 },
+  "ek9": { wheelbaseMm: 2360, frontTrackMm: 1480, rearTrackMm: 1480 },
+  "gr-yaris": { wheelbaseMm: 2560, frontTrackMm: 1535, rearTrackMm: 1565 },
+  "audi-rs5": { wheelbaseMm: 2751, frontTrackMm: 1586, rearTrackMm: 1582 },
+  "c63": { wheelbaseMm: 2765, frontTrackMm: 1547, rearTrackMm: 1525 },
+  "rx7": { wheelbaseMm: 2425, frontTrackMm: 1460, rearTrackMm: 1460 },
   "hellcat-redeye": { wheelbaseMm: 2950, frontTrackMm: 1610, rearTrackMm: 1620 },
   "ford-f150-raptor-v8": { wheelbaseMm: 3680, frontTrackMm: 1880, rearTrackMm: 1870 },
   "toyota-land-cruiser-lc300": { wheelbaseMm: 2850, frontTrackMm: 1667, rearTrackMm: 1668 },
@@ -79,11 +92,13 @@ export function BlueprintCanvas() {
   }, [vehicles, selectedVehicleId]);
 
   const slots = useBuildStore((s) => s.slots);
+  const resetPart = useBuildStore((s) => s.resetPart);
   const resetAllToOem = useBuildStore((s) => s.resetAllToOem);
   const resolved = useMemo(() => resolveBuildParts(vehicle, slots), [vehicle, slots]);
   const telemetry = useMemo(() => computeVehicleTelemetry(vehicle, resolved), [vehicle, resolved]);
 
   const openDrawer = useUiStore((s) => s.openDrawer);
+  const openAudioModal = useUiStore((s) => s.openAudioModal);
   const showToast = useUiStore((s) => s.showToast);
   const openShopPrintsModal = useUiStore((s) => s.openShopPrintsModal);
 
@@ -91,6 +106,8 @@ export function BlueprintCanvas() {
   const [cadMode, setCadMode] = useState<CadVisualMode>("dark-cad");
   const [projection, setProjection] = useState<CadProjection>("top");
   const [showTitleBlock, setShowTitleBlock] = useState(true);
+  const [inspectedSlot, setInspectedSlot] = useState<PartSlotKind | "fuel" | null>("engine");
+  const [hoveredSlot, setHoveredSlot] = useState<PartSlotKind | "fuel" | null>(null);
   const [layers, setLayers] = useState<CadLayerConfig>({
     chassis: true,
     powertrain: true,
@@ -106,7 +123,10 @@ export function BlueprintCanvas() {
     setLayers((prev) => ({ ...prev, [layerKey]: !prev[layerKey] }));
   };
 
+  const activeSlot = hoveredSlot || inspectedSlot;
+
   const handleNodeClick = (slot: PartSlotKind) => {
+    setInspectedSlot(slot);
     openDrawer(slot);
   };
 
@@ -180,12 +200,20 @@ export function BlueprintCanvas() {
     img.src = url;
   };
 
-  // Vehicle geometry
-  const geom = VEHICLE_GEOMETRY_SPECS[vehicle.id] ?? {
-    wheelbaseMm: 2700,
-    frontTrackMm: 1580,
-    rearTrackMm: 1580,
-  };
+  // Vehicle geometry matching (exact or prefix/keyword)
+  const geom = useMemo(() => {
+    const id = vehicle.id.toLowerCase();
+    for (const [key, spec] of Object.entries(VEHICLE_GEOMETRY_SPECS)) {
+      if (id.includes(key) || key.includes(id)) {
+        return spec;
+      }
+    }
+    return {
+      wheelbaseMm: 2700,
+      frontTrackMm: 1580,
+      rearTrackMm: 1580,
+    };
+  }, [vehicle]);
 
   const archetype = getBodyArchetype(vehicle.body);
   const bodyInfo = BODY_ARCHETYPE_LABELS[archetype] ?? BODY_ARCHETYPE_LABELS.coupe;
@@ -198,6 +226,21 @@ export function BlueprintCanvas() {
     "golf",
     "bmw-m3",
     "mustang",
+    "lancer-evo",
+    "evolution",
+    "civic-type-r",
+    "ek9",
+    "gr-yaris",
+    "yaris",
+    "porsche",
+    "992",
+    "gt3",
+    "corvette",
+    "z06",
+    "rs5",
+    "c63",
+    "rx7",
+    "gtr",
   ].some((m) => vehicle.id.toLowerCase().includes(m));
 
   return (
@@ -439,7 +482,10 @@ export function BlueprintCanvas() {
               cadMode={cadMode}
               layers={layers}
               geom={geom}
+              hoveredSlot={hoveredSlot}
+              selectedSlot={inspectedSlot}
               onNodeClick={handleNodeClick}
+              onNodeHover={setHoveredSlot}
             />
           </div>
         )}
@@ -460,11 +506,32 @@ export function BlueprintCanvas() {
               cadMode={cadMode}
               layers={layers}
               geom={geom}
+              hoveredSlot={hoveredSlot}
+              selectedSlot={inspectedSlot}
               onNodeClick={handleNodeClick}
+              onNodeHover={setHoveredSlot}
             />
           </div>
         )}
       </div>
+
+      {/* Interactive CAD Component Inspector HUD */}
+      {activeSlot && (
+        <div className="w-full max-w-4xl z-20 mt-4 mb-2">
+          <CadInspectorHud
+            slot={activeSlot}
+            resolved={resolved}
+            vehicle={vehicle}
+            onOpenDrawer={openDrawer}
+            onResetSlot={resetPart}
+            onOpenAudioModal={openAudioModal}
+            onClose={() => {
+              setInspectedSlot(null);
+              setHoveredSlot(null);
+            }}
+          />
+        </div>
+      )}
 
       {/* Engineering ISO Title Block */}
       {showTitleBlock && (

@@ -26,7 +26,10 @@ interface BlueprintSideViewProps {
     frontTrackMm: number;
     rearTrackMm: number;
   };
+  hoveredSlot?: PartSlotKind | "fuel" | null;
+  selectedSlot?: PartSlotKind | "fuel" | null;
   onNodeClick: (slot: PartSlotKind) => void;
+  onNodeHover?: (slot: PartSlotKind | "fuel" | null) => void;
 }
 
 export function BlueprintSideView({
@@ -36,10 +39,15 @@ export function BlueprintSideView({
   cadMode,
   layers,
   geom: vehicleGeom,
+  hoveredSlot,
+  selectedSlot,
   onNodeClick,
+  onNodeHover,
 }: BlueprintSideViewProps) {
   const archetype = getBodyArchetype(vehicle.body);
   const geom = getModelSideViewGeometry(vehicle);
+
+  const isSlotActive = (slot: PartSlotKind | "fuel") => hoveredSlot === slot || selectedSlot === slot;
 
   // Dynamic Stance and Clearance calculation based on installed suspension
   const dropMm = resolved.suspension?.dropMm ?? 0;
@@ -114,6 +122,14 @@ export function BlueprintSideView({
           <filter id="glow-emerald-side" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="3.5" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <filter id="glow-inspect-side" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feColorMatrix type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.8  0 0 0 0 0.95  0 0 0 1 0" result="cyanGlow" />
+            <feMerge>
+              <feMergeNode in="cyanGlow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
           <linearGradient id="tireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#1e293b" />
@@ -208,13 +224,20 @@ export function BlueprintSideView({
 
         {/* --- LAYER 2: COOLING & FRONT INTERCOOLER --- */}
         {layers.cooling && (
-          <g id="layer-cooling-side" className="cursor-pointer" onClick={() => onNodeClick("cooling")}>
+          <g
+            id="layer-cooling-side"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("cooling")}
+            onMouseEnter={() => onNodeHover?.("cooling")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("cooling") ? "url(#glow-inspect-side)" : undefined}
+          >
             {/* Tilted Radiator in Front Grill */}
             <path
               d="M 175 240 L 195 240 L 180 320 L 160 320 Z"
-              fill="rgba(30, 58, 138, 0.7)"
-              stroke={resolved.isCustomCooling ? "#38bdf8" : "#0284c7"}
-              strokeWidth="2"
+              fill={isSlotActive("cooling") ? "rgba(30, 64, 175, 0.9)" : "rgba(30, 58, 138, 0.7)"}
+              stroke={isSlotActive("cooling") ? "#38bdf8" : resolved.isCustomCooling ? "#38bdf8" : "#0284c7"}
+              strokeWidth={isSlotActive("cooling") ? "3" : "2"}
             />
             {/* Front Mount Intercooler (FMIC) */}
             <rect
@@ -244,7 +267,14 @@ export function BlueprintSideView({
 
         {/* --- LAYER 3: EXHAUST SYSTEM ELEVATION --- */}
         {layers.plumbing && (
-          <g id="layer-exhaust-side" className="cursor-pointer" onClick={() => onNodeClick("exhaust")}>
+          <g
+            id="layer-exhaust-side"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("exhaust")}
+            onMouseEnter={() => onNodeHover?.("exhaust")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("exhaust") ? "url(#glow-inspect-side)" : undefined}
+          >
             {/* Downpipe from engine bay sweeping down to floor */}
             <path
               d="M 285 285 C 300 320, 310 345, 360 348 L 840 348"
@@ -274,7 +304,14 @@ export function BlueprintSideView({
 
         {/* --- LAYER 4: POWERTRAIN (ENGINE BLOCK PROFILE & TURBO) --- */}
         {layers.powertrain && (
-          <g id="layer-powertrain-side" className="cursor-pointer" onClick={() => onNodeClick("engine")}>
+          <g
+            id="layer-powertrain-side"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("engine")}
+            onMouseEnter={() => onNodeHover?.("engine")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("engine") ? "url(#glow-inspect-side)" : undefined}
+          >
             {/* Mounts / Tubular Subframe profile underneath */}
             {layers.chassis && (
               <path
@@ -343,11 +380,54 @@ export function BlueprintSideView({
 
             {/* Turbocharger & Air Filter Assembly */}
             {resolved.turbo && (
-              <g id="side-turbo" className="cursor-pointer" onClick={() => onNodeClick("turbo")}>
+              <g
+                id="side-turbo"
+                className="cursor-pointer transition-all duration-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNodeClick("turbo");
+                }}
+                onMouseEnter={(e) => {
+                  e.stopPropagation();
+                  onNodeHover?.("turbo");
+                }}
+                onMouseLeave={(e) => {
+                  e.stopPropagation();
+                  onNodeHover?.(null);
+                }}
+                filter={isSlotActive("turbo") ? "url(#glow-inspect-side)" : undefined}
+              >
                 {/* Snail Compressor Housing */}
                 <circle cx="210" cy="265" r="15" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" filter="url(#glow-cyan-side)" />
                 {/* High flow cone intake filter */}
                 <path d="M 180 258 L 195 262 L 195 272 L 180 276 Z" fill="#ef4444" stroke="#f87171" strokeWidth="1.5" />
+              </g>
+            )}
+
+            {/* Front Mount Intercooler (FMIC) in front bumper */}
+            {layers.cooling && (
+              <g
+                id="side-fmic"
+                className="cursor-pointer transition-all duration-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNodeClick("cooling");
+                }}
+                onMouseEnter={(e) => {
+                  e.stopPropagation();
+                  onNodeHover?.("cooling");
+                }}
+                onMouseLeave={(e) => {
+                  e.stopPropagation();
+                  onNodeHover?.(null);
+                }}
+                filter={isSlotActive("cooling") ? "url(#glow-inspect-side)" : undefined}
+              >
+                <rect x="110" y="278" width="16" height="42" rx="2" fill="#0f172a" stroke="#38bdf8" strokeWidth="2" filter="url(#glow-cyan-side)" />
+                <line x1="110" y1="288" x2="126" y2="288" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2 1" />
+                <line x1="110" y1="298" x2="126" y2="298" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2 1" />
+                <line x1="110" y1="308" x2="126" y2="308" stroke="#38bdf8" strokeWidth="1" strokeDasharray="2 1" />
+                <path d="M 126 290 Q 165 290 195 270" fill="none" stroke="#38bdf8" strokeWidth="3" strokeLinecap="round" />
               </g>
             )}
           </g>
@@ -355,15 +435,20 @@ export function BlueprintSideView({
 
         {/* --- LAYER 5: DRIVETRAIN & TRANSMISSION --- */}
         {layers.drivetrain && (
-          <g id="layer-drivetrain-side">
+          <g
+            id="layer-drivetrain-side"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("transmission")}
+            onMouseEnter={() => onNodeHover?.("transmission")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("transmission") ? "url(#glow-inspect-side)" : undefined}
+          >
             {/* Bellhousing mating cone */}
             <path
               d="M 320 245 L 360 270 L 360 330 L 310 325 Z"
               fill="#1e293b"
-              stroke={transColor}
-              strokeWidth="2"
-              className="cursor-pointer"
-              onClick={() => onNodeClick("transmission")}
+              stroke={isSlotActive("transmission") ? "#38bdf8" : transColor}
+              strokeWidth={isSlotActive("transmission") ? "3" : "2"}
             />
             {/* Transmission Gearbox Casing */}
             <rect
@@ -373,10 +458,8 @@ export function BlueprintSideView({
               height="50"
               rx="4"
               fill="#0f172a"
-              stroke={transColor}
-              strokeWidth="2"
-              className="cursor-pointer"
-              onClick={() => onNodeClick("transmission")}
+              stroke={isSlotActive("transmission") ? "#38bdf8" : transColor}
+              strokeWidth={isSlotActive("transmission") ? "3" : "2"}
             />
             {/* Shifter linkage into cabin */}
             <line x1="410" y1="275" x2="430" y2="230" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
@@ -397,14 +480,30 @@ export function BlueprintSideView({
             />
 
             {/* Rear Differential Pumpkin */}
-            <g id="side-diff" className="cursor-pointer" onClick={() => onNodeClick("differential")}>
+            <g
+              id="side-diff"
+              className="cursor-pointer transition-all duration-200"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNodeClick("differential");
+              }}
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                onNodeHover?.("differential");
+              }}
+              onMouseLeave={(e) => {
+                e.stopPropagation();
+                onNodeHover?.(null);
+              }}
+              filter={isSlotActive("differential") || isSlotActive("driveline") ? "url(#glow-inspect-side)" : undefined}
+            >
               <circle
                 cx="750"
                 cy="340"
                 r="22"
                 fill="#0f172a"
-                stroke={resolved.isCustomDiff ? "#10b981" : "#0284c7"}
-                strokeWidth="2.5"
+                stroke={isSlotActive("differential") ? "#38bdf8" : resolved.isCustomDiff ? "#10b981" : "#0284c7"}
+                strokeWidth={isSlotActive("differential") ? "3" : "2.5"}
               />
               <line x1="738" y1="335" x2="762" y2="335" stroke="#38bdf8" strokeWidth="1.5" />
               <line x1="738" y1="345" x2="762" y2="345" stroke="#38bdf8" strokeWidth="1.5" />
@@ -412,12 +511,56 @@ export function BlueprintSideView({
                 DIFF
               </text>
             </g>
+
+            {/* Performance Fuel Cell under rear bench */}
+            {layers.plumbing && (
+              <g
+                id="side-fuel-tank"
+                className="cursor-pointer transition-all duration-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNodeClick("cooling");
+                }}
+                onMouseEnter={(e) => {
+                  e.stopPropagation();
+                  onNodeHover?.("fuel");
+                }}
+                onMouseLeave={(e) => {
+                  e.stopPropagation();
+                  onNodeHover?.(null);
+                }}
+                filter={isSlotActive("fuel") ? "url(#glow-inspect-side)" : undefined}
+              >
+                <rect
+                  x="620"
+                  y="318"
+                  width="95"
+                  height="34"
+                  rx="4"
+                  fill={isSlotActive("fuel") ? "rgba(88, 28, 135, 0.8)" : "#0f172a"}
+                  stroke={isSlotActive("fuel") ? "#e879f9" : "#a855f7"}
+                  strokeWidth={isSlotActive("fuel") ? "3" : "2"}
+                  strokeDasharray="4 2"
+                />
+                <circle cx="668" cy="318" r="5" fill="#c084fc" />
+                <text x="668" y="338" textAnchor="middle" fill="#d8b4fe" fontSize="7" fontWeight="bold" fontFamily="monospace">
+                  FUEL TANK
+                </text>
+              </g>
+            )}
           </g>
         )}
 
         {/* --- LAYER 6: SUSPENSION COILOVERS (WHEEL WELLS) --- */}
         {layers.suspension && (
-          <g id="layer-suspension-side" className="cursor-pointer" onClick={() => onNodeClick("suspension")}>
+          <g
+            id="layer-suspension-side"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("suspension")}
+            onMouseEnter={() => onNodeHover?.("suspension")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("suspension") ? "url(#glow-inspect-side)" : undefined}
+          >
             {/* Front Coilover */}
             <g id="front-coilover">
               {/* Upper strut top hat mount */}
@@ -449,7 +592,14 @@ export function BlueprintSideView({
 
         {/* --- LAYER 7: WHEELS & BIG BRAKE KITS --- */}
         {layers.brakes && (
-          <g id="layer-wheels-brakes-side" className="cursor-pointer" onClick={() => onNodeClick("brakes")}>
+          <g
+            id="layer-wheels-brakes-side"
+            className="cursor-pointer transition-all duration-200"
+            onClick={() => onNodeClick("brakes")}
+            onMouseEnter={() => onNodeHover?.("brakes")}
+            onMouseLeave={() => onNodeHover?.(null)}
+            filter={isSlotActive("brakes") ? "url(#glow-inspect-side)" : undefined}
+          >
             {/* FRONT WHEEL ASSEMBLY (X=230, Y=355) */}
             <g id="front-wheel">
               {/* Outer Rubber Tire */}
