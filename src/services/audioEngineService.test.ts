@@ -30,11 +30,15 @@ test("Audio Engine Service", async (t) => {
     engineAudio.setThrottle(0.75);
     engineAudio.setExhaustPreset("valvetronic");
     engineAudio.setChopIdle(true);
+    engineAudio.setLoadMode("in-gear");
+    engineAudio.setFlywheelType("lightweight");
 
     const status = engineAudio.getStatus();
     assert.equal(status.throttle, 0.75);
     assert.equal(status.exhaustPreset, "valvetronic");
     assert.equal(status.isChopIdle, true);
+    assert.equal(status.loadMode, "in-gear");
+    assert.equal(status.flywheelType, "lightweight");
   });
 
   await t.test("handles triggerBov and triggerPopAndBang safely without DOM AudioContext in Node", () => {

@@ -10,17 +10,22 @@ import {
   Radio,
   Sliders,
   Gauge,
-  GaugeCircle,
   Activity,
   Sparkles,
   Settings2,
-  Disc,
+  Disc3,
+  Wind,
 } from "lucide-react";
 import { useUiStore } from "@/stores/useUiStore";
 import { useVehicleStore } from "@/stores/useVehicleStore";
 import { useBuildStore } from "@/stores/useBuildStore";
 import { resolveBuildParts } from "@/services/swapService";
-import { engineAudio, type ExhaustSoundPreset } from "@/services/audioEngineService";
+import {
+  engineAudio,
+  type ExhaustSoundPreset,
+  type LoadMode,
+  type FlywheelType,
+} from "@/services/audioEngineService";
 
 export function EngineAudioModal() {
   const isOpen = useUiStore((s) => s.isAudioModalOpen);
@@ -36,7 +41,10 @@ export function EngineAudioModal() {
   const [isThrottling, setIsThrottling] = useState(false);
   const [is2StepActive, setIs2StepActive] = useState(false);
   const [isChopIdle, setIsChopIdle] = useState(false);
+  const [loadMode, setLoadMode] = useState<LoadMode>("neutral");
+  const [flywheelType, setFlywheelType] = useState<FlywheelType>("oem");
   const [exhaustPreset, setExhaustPreset] = useState<ExhaustSoundPreset>("sport-resonated");
+  const [currentBoost, setCurrentBoost] = useState(0.0);
   const [flamePops, setFlamePops] = useState(0);
 
   const vehicle = useMemo(() => {
@@ -50,6 +58,7 @@ export function EngineAudioModal() {
 
   const redline = resolved?.engine.redlineRpm ?? 7000;
   const idleRpm = 850;
+  const hasTurbo = resolved?.turbo !== null || (resolved?.engine.aspiration !== "na");
 
   // Sync audio engine configuration whenever vehicle or parts change
   useEffect(() => {
@@ -68,12 +77,14 @@ export function EngineAudioModal() {
       cylinderLayout: resolved.engine.cylinderLayout ?? "inline",
       redlineRpm: resolved.engine.redlineRpm ?? 7000,
       exhaustType: defaultPreset,
-      hasTurbo: resolved.turbo !== null || resolved.engine.aspiration !== "na",
+      hasTurbo,
       engineCode: resolved.engine.code,
       family: resolved.engine.family,
     });
     engineAudio.setExhaustPreset(defaultPreset);
-  }, [resolved]);
+    engineAudio.setLoadMode(loadMode);
+    engineAudio.setFlywheelType(flywheelType);
+  }, [resolved, hasTurbo, loadMode, flywheelType]);
 
   // Clean shutdown on unmount or modal close
   useEffect(() => {
@@ -82,10 +93,11 @@ export function EngineAudioModal() {
       setIsPlaying(false);
       setRpm(idleRpm);
       setThrottle(0);
+      setCurrentBoost(0);
     }
   }, [isOpen, isPlaying, idleRpm]);
 
-  // Throttle physics loop (Realistic inertia, throttle load & overrun decel)
+  // Live refs for physics loop to eliminate stale closures
   const isThrottlingRef = useRef(isThrottling);
   isThrottlingRef.current = isThrottling;
 
@@ -98,57 +110,119 @@ export function EngineAudioModal() {
   const throttleRef = useRef(throttle);
   throttleRef.current = throttle;
 
+  const loadModeRef = useRef(loadMode);
+  loadModeRef.current = loadMode;
+
+  const flywheelRef = useRef(flywheelType);
+  flywheelRef.current = flywheelType;
+
+  // Real-world Drivetrain & Flywheel Inertia Differential Physics Loop
   useEffect(() => {
     if (!isPlaying) return;
 
     let animId: number;
     let currentLocalRpm = rpm;
+    let lastTime = performance.now();
 
-    const tick = () => {
+    const tick = (now: number) => {
       if (!isPlayingRef.current) return;
 
-      if (is2StepRef.current) {
-        // 2-Step launch control cut at 5200 RPM with rapid backfire pops
-        const target = 5200 + (Math.random() * 320 - 160);
-        currentLocalRpm = target;
-        engineAudio.setThrottle(1.0);
-        if (Math.random() > 0.65) {
-          engineAudio.triggerPopAndBang();
-          setFlamePops((p) => p + 1);
-        }
-      } else if (isThrottlingRef.current) {
-        // Full throttle acceleration
-        engineAudio.setThrottle(1.0);
-        setThrottle(1.0);
-        currentLocalRpm = Math.min(redline, currentLocalRpm + 160);
-        if (currentLocalRpm >= redline - 40) {
-          // Bouncing on the rev limiter with fuel cut
-          engineAudio.triggerPopAndBang();
-          setFlamePops((p) => p + 1);
-          currentLocalRpm = redline - 280;
-        }
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      // 1. Determine active throttle input
+      let effectiveThrottle = isThrottlingRef.current ? 1.0 : throttleRef.current;
+      if (is2StepRef.current) effectiveThrottle = 1.0;
+
+      // 2. Flywheel Inertia & Load Dynamics
+      // In Neutral: OEM flywheel takes ~2.0s to rev to redline; Lightweight takes ~1.5s
+      // In Gear (Dyno Pull): takes ~4.2s to rev to redline under full load
+      const isNeutral = loadModeRef.current === "neutral";
+      const isLightFlywheel = flywheelRef.current === "lightweight";
+
+      let maxRpmRate: number;
+      if (isNeutral) {
+        maxRpmRate = isLightFlywheel ? 4100 : 3100; // RPM/sec
       } else {
-        // Deceleration down to idle (throttle 0)
-        engineAudio.setThrottle(0.0);
-        setThrottle(0.0);
-        // Engine braking deceleration rate
-        currentLocalRpm = Math.max(idleRpm, currentLocalRpm - 110);
+        // Under load in gear
+        maxRpmRate = isLightFlywheel ? 1550 : 1300; // RPM/sec
       }
 
-      setRpm(Math.round(currentLocalRpm));
-      engineAudio.setRpm(currentLocalRpm);
+      // 3. Torque curve modeling: peak acceleration in mid-RPM, tapering near redline
+      const rpmRatio = (currentLocalRpm - idleRpm) / (redline - idleRpm);
+      const torqueCurve = 0.75 + 0.35 * Math.sin(Math.PI * Math.min(1, rpmRatio));
+
+      // 4. Turbo boost calculation
+      let targetBoost = 0.0;
+      if (hasTurbo && effectiveThrottle > 0.1) {
+        const boostCap = isNeutral ? 0.35 : 1.75;
+        const boostSpool = Math.max(0, (currentLocalRpm - 2400) / (redline - 2400));
+        targetBoost = boostSpool * effectiveThrottle * boostCap;
+      }
+
+      // 5. Differential RPM update
+      if (is2StepRef.current) {
+        // 2-Step launch control cut at 5200 RPM with violent ignition cuts
+        const target = 5200 + (Math.random() * 280 - 140);
+        currentLocalRpm += (target - currentLocalRpm) * 0.25;
+        if (Math.random() > 0.62) {
+          engineAudio.triggerPopAndBang();
+          setFlamePops((p) => p + 1);
+        }
+      } else if (effectiveThrottle > 0.02) {
+        // Accelerating under throttle
+        const accelerationRate = maxRpmRate * effectiveThrottle * torqueCurve;
+        currentLocalRpm += accelerationRate * dt;
+
+        if (currentLocalRpm >= redline - 40) {
+          // Hard cut on redline rev limiter
+          engineAudio.triggerPopAndBang();
+          setFlamePops((p) => p + 1);
+          currentLocalRpm = redline - 240;
+        }
+      } else {
+        // Decelerating (Engine braking)
+        // Rate of drop is ~2200 RPM/sec at high RPM, softening near idle
+        const brakingRate = 1800 + rpmRatio * 800;
+        currentLocalRpm -= brakingRate * dt;
+
+        // Soft idle cushion
+        if (currentLocalRpm < idleRpm + 150) {
+          currentLocalRpm += (idleRpm - currentLocalRpm) * 0.15;
+        }
+        currentLocalRpm = Math.max(idleRpm, currentLocalRpm);
+      }
+
+      const roundedRpm = Math.round(currentLocalRpm);
+      setRpm(roundedRpm);
+      setCurrentBoost(Number(targetBoost.toFixed(2)));
+
+      engineAudio.setRpm(roundedRpm);
+      engineAudio.setThrottle(effectiveThrottle);
 
       animId = requestAnimationFrame(tick);
     };
 
     animId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animId);
-  }, [isPlaying, redline, idleRpm]);
+  }, [isPlaying, redline, idleRpm, hasTurbo]);
 
   // Handle Preset change
   const handleSelectPreset = (preset: ExhaustSoundPreset) => {
     setExhaustPreset(preset);
     engineAudio.setExhaustPreset(preset);
+  };
+
+  // Handle Load mode change
+  const handleSelectLoadMode = (mode: LoadMode) => {
+    setLoadMode(mode);
+    engineAudio.setLoadMode(mode);
+  };
+
+  // Handle Flywheel type change
+  const handleSelectFlywheel = (type: FlywheelType) => {
+    setFlywheelType(type);
+    engineAudio.setFlywheelType(type);
   };
 
   // Handle Chop Idle toggle
@@ -193,6 +267,7 @@ export function EngineAudioModal() {
       setIsPlaying(false);
       setRpm(idleRpm);
       setThrottle(0);
+      setCurrentBoost(0);
     } else {
       engineAudio.start();
       setIsPlaying(true);
@@ -202,11 +277,11 @@ export function EngineAudioModal() {
   if (!isOpen || !vehicle || !resolved) return null;
 
   const rpmPercent = Math.min(100, Math.max(0, ((rpm - idleRpm) / (redline - idleRpm)) * 100));
-  const isNearRedline = rpm >= redline - 600;
+  const isNearRedline = rpm >= redline - 550;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] overflow-y-auto">
         {/* Top Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/70">
           <div className="flex items-center gap-3">
@@ -216,14 +291,14 @@ export function EngineAudioModal() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-slate-100">
-                  Акустический симулятор ДВС (엔진 사운드 시뮬레이터)
+                  Физический акустический симулятор ДВС (엔진 사운드 시뮬레이터)
                 </h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 font-semibold">
-                  Физическая модель
+                  Waveguide 3D Audio
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                {resolved.engine.code} ({resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl) · {resolved.engine.valvetrain?.toUpperCase() ?? "DOHC"} · Redline: {redline} RPM
+                {resolved.engine.code} ({resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl) · {resolved.engine.valvetrain?.toUpperCase() ?? "DOHC"} · Отсечка: {redline} RPM
               </p>
             </div>
           </div>
@@ -238,51 +313,147 @@ export function EngineAudioModal() {
 
         {/* Tachometer Body */}
         <div className="p-6 flex flex-col items-center justify-center space-y-6 bg-gradient-to-b from-slate-950 to-slate-900">
-          {/* RPM Digital & Fire burst effect */}
-          <div className="relative w-full max-w-md h-40 flex flex-col items-center justify-end">
-            {(isNearRedline || is2StepActive) && isPlaying && (
-              <div className="absolute top-0 flex items-center gap-2 animate-bounce">
-                <Flame className="w-8 h-8 text-amber-500 animate-pulse drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
-                <Sparkles className="w-6 h-6 text-orange-400 animate-spin" />
-                <Flame className="w-8 h-8 text-rose-500 animate-pulse drop-shadow-[0_0_12px_rgba(244,63,94,0.8)]" />
+          {/* Main Gauges: Tachometer & Boost Gauge */}
+          <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+            {/* Boost Pressure Gauge */}
+            <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                <Wind className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Буст (Boost)</span>
               </div>
-            )}
+              <div className="text-2xl font-black font-mono text-cyan-400">
+                {isPlaying && hasTurbo ? `${currentBoost.toFixed(2)}` : "0.00"}{" "}
+                <span className="text-xs font-normal text-slate-500">bar</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-cyan-400 transition-all duration-75"
+                  style={{ width: `${Math.min(100, (currentBoost / 1.8) * 100)}%` }}
+                />
+              </div>
+            </div>
 
-            <div className="text-center space-y-1">
+            {/* Central RPM Display */}
+            <div className="relative flex flex-col items-center justify-center text-center space-y-1">
+              {(isNearRedline || is2StepActive) && isPlaying && (
+                <div className="absolute -top-7 flex items-center gap-2 animate-bounce">
+                  <Flame className="w-7 h-7 text-amber-500 animate-pulse drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
+                  <Sparkles className="w-5 h-5 text-orange-400 animate-spin" />
+                  <Flame className="w-7 h-7 text-rose-500 animate-pulse drop-shadow-[0_0_12px_rgba(244,63,94,0.8)]" />
+                </div>
+              )}
+
               <div className="text-5xl font-black font-mono tracking-tight text-white drop-shadow-md">
                 {isPlaying ? rpm : "OFF"}
               </div>
-              <div className="text-xs font-mono uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
-                <span>RPM (Обороты ДВС)</span>
+              <div className="text-xs font-mono uppercase tracking-widest text-slate-400 flex items-center justify-center gap-1.5">
+                <span>Обороты (RPM)</span>
                 {isChopIdle && isPlaying && rpm < 1100 && (
-                  <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 font-bold">
-                    CAM LOPE
+                  <span className="text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 font-bold">
+                    CHOP
                   </span>
                 )}
               </div>
             </div>
 
-            {/* RPM Progress Bar */}
-            <div className="w-full mt-4 h-3.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
-              <div
-                className={`h-full rounded-full transition-all duration-75 ${
-                  isNearRedline || is2StepActive
-                    ? "bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 shadow-lg shadow-rose-950"
-                    : "bg-gradient-to-r from-cyan-500 via-emerald-400 to-amber-400"
-                }`}
-                style={{ width: `${isPlaying ? rpmPercent : 0}%` }}
-              />
+            {/* Drivetrain Load & Flywheel Info */}
+            <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                <Disc3 className="w-3.5 h-3.5 text-amber-400" />
+                <span>Инерция (Inertia)</span>
+              </div>
+              <div className="text-xs font-bold font-mono text-slate-200">
+                {loadMode === "in-gear" ? "2-я передача" : "Нейтраль (N)"}
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                {flywheelType === "lightweight" ? "Маховик 4.8 кг" : "Сток 12 кг"}
+              </div>
+            </div>
+          </div>
+
+          {/* RPM Arc Bar */}
+          <div className="w-full max-w-lg h-3.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
+            <div
+              className={`h-full rounded-full transition-all duration-75 ${
+                isNearRedline || is2StepActive
+                  ? "bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 shadow-lg shadow-rose-950"
+                  : "bg-gradient-to-r from-cyan-500 via-emerald-400 to-amber-400"
+              }`}
+              style={{ width: `${isPlaying ? rpmPercent : 0}%` }}
+            />
+          </div>
+
+          {/* Physics Engine Controls: Load Mode & Flywheel Selection */}
+          <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+            {/* Load Mode Selector */}
+            <div className="space-y-1.5">
+              <div className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
+                <Gauge className="w-3.5 h-3.5 text-cyan-400" />
+                Режим нагрузки трансмиссии:
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => handleSelectLoadMode("neutral")}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                    loadMode === "neutral"
+                      ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-bold"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Нейтраль N (~2.0с)
+                </button>
+                <button
+                  onClick={() => handleSelectLoadMode("in-gear")}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                    loadMode === "in-gear"
+                      ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-bold"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Разгон в пол (~4.5с)
+                </button>
+              </div>
+            </div>
+
+            {/* Flywheel Mass Selector */}
+            <div className="space-y-1.5">
+              <div className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
+                <Disc3 className="w-3.5 h-3.5 text-amber-400" />
+                Масса маховика (Инерция):
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={() => handleSelectFlywheel("oem")}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                    flywheelType === "oem"
+                      ? "bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Сток (12 кг)
+                </button>
+                <button
+                  onClick={() => handleSelectFlywheel("lightweight")}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                    flywheelType === "lightweight"
+                      ? "bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Кованый (4.8 кг)
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Exhaust Acoustic Profiles */}
-          <div className="w-full max-w-md bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
+          <div className="w-full max-w-lg bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-300 font-semibold px-1">
               <span className="flex items-center gap-1.5 text-slate-400">
-                <Settings2 className="w-3.5 h-3.5 text-cyan-400" />
-                Акустический профиль выхлопа:
+                <Settings2 className="w-3.5 h-3.5 text-orange-400" />
+                Геометрия и глушитель выхлопа:
               </span>
-              <span className="font-mono text-cyan-400 uppercase text-[11px]">
+              <span className="font-mono text-orange-400 uppercase text-[11px]">
                 {exhaustPreset}
               </span>
             </div>
@@ -290,9 +461,9 @@ export function EngineAudioModal() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {(
                 [
-                  { id: "oem", label: "OEM Сток", desc: "Приглушенный" },
-                  { id: "sport-resonated", label: "Спорт-резонатор", desc: "Глубокий бас" },
-                  { id: "valvetronic", label: "Заслонка", desc: "Сочный рокот" },
+                  { id: "oem", label: "OEM Сток", desc: "Тихий" },
+                  { id: "sport-resonated", label: "Спорт-резонатор", desc: "Плотный бас" },
+                  { id: "valvetronic", label: "Заслонка", desc: "Рык" },
                   { id: "straight-pipe", label: "Прямоток", desc: "Злой звон" },
                 ] as const
               ).map((preset) => (
@@ -315,11 +486,11 @@ export function EngineAudioModal() {
           {/* Engine Parameters & Cam Tuning */}
           <div className="flex items-center gap-2 flex-wrap justify-center text-xs">
             <span className="px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-mono text-slate-300">
-              Конфигурация: <strong>{resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl</strong>
+              Архитектура: <strong>{resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl</strong>
             </span>
-            {resolved.turbo && (
-              <span className="px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 font-mono text-amber-300">
-                Турбонаддув: <strong>BOV Flutter Active</strong>
+            {hasTurbo && (
+              <span className="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 font-mono text-cyan-300">
+                Турбонаддув: <strong>{loadMode === "in-gear" ? "High Boost 1.75 bar" : "Free Spool"}</strong>
               </span>
             )}
             <button
@@ -334,8 +505,51 @@ export function EngineAudioModal() {
             </button>
           </div>
 
-          {/* Interactive Controls Bar */}
-          <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          {/* Smooth Throttle Slider Control */}
+          <div className="w-full max-w-lg bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-300 font-semibold">
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                Степень открытия дросселя (Throttle):
+              </span>
+              <span className="font-mono text-cyan-400">
+                {isThrottling ? "100% (WOT)" : `${Math.round(throttle * 100)}%`}
+              </span>
+            </div>
+
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              disabled={!isPlaying}
+              value={isThrottling ? 1 : throttle}
+              onChange={(e) => setThrottle(parseFloat(e.target.value))}
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400 disabled:opacity-40"
+            />
+
+            {/* Quick RPM Holding Buttons */}
+            <div className="grid grid-cols-4 gap-1.5 pt-1">
+              {[
+                { label: "Холостой", val: 0.0 },
+                { label: "Круиз 30%", val: 0.3 },
+                { label: "Полка 60%", val: 0.6 },
+                { label: "Газ 100%", val: 1.0 },
+              ].map((btn) => (
+                <button
+                  key={btn.label}
+                  disabled={!isPlaying}
+                  onClick={() => setThrottle(btn.val)}
+                  className="py-1 px-1.5 text-[10px] font-mono rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Interactive Action Buttons */}
+          <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
             {/* Start / Stop Ignition Switch */}
             <button
               onClick={handleToggleStart}
@@ -392,10 +606,10 @@ export function EngineAudioModal() {
 
           <div className="text-center space-y-1">
             <p className="text-[11px] text-slate-400 font-mono">
-              Подсказка: Удерживай клавишу <strong>ПРОБЕЛ (Spacebar)</strong> для симуляции нажатия педали газа.
+              Подсказка: Удерживай клавишу <strong>ПРОБЕЛ (Spacebar)</strong> для педали газа.
             </p>
             <p className="text-[10px] text-slate-500 font-mono">
-              При быстром сбросе газа с высоких оборотов автоматически генерируются отстрелы и попкорн (Overrun Burble).
+              В режиме <strong>«Разгон в пол»</strong> мотор разгоняется плавно с ростом наддува турбины (до 1.75 bar).
             </p>
           </div>
         </div>
