@@ -3,6 +3,7 @@ import type { CylinderLayout } from "@/domain/parts/types";
 export interface EngineSoundConfig {
   cylinders: number;
   cylinderLayout: CylinderLayout;
+  displacementLiters: number;
   redlineRpm: number;
   exhaustType: string;
   hasTurbo: boolean;
@@ -13,6 +14,7 @@ export interface EngineSoundConfig {
 export type ExhaustSoundPreset = "oem" | "sport-resonated" | "valvetronic" | "straight-pipe";
 export type LoadMode = "neutral" | "in-gear";
 export type FlywheelType = "oem" | "lightweight";
+export type AudioPerspective = "cockpit" | "tailpipe" | "engine-bay";
 
 export interface EngineAudioState {
   isRunning: boolean;
@@ -24,22 +26,24 @@ export interface EngineAudioState {
   exhaustPreset: ExhaustSoundPreset;
   loadMode: LoadMode;
   flywheelType: FlywheelType;
+  perspective: AudioPerspective;
+  displacementLiters: number;
 }
 
 /**
  * Next-Gen Physical Waveguide Automotive Engine Synthesizer.
  *
  * Implements Stanford CCRMA Digital Waveguide Physical Modeling:
- * 1. 64-harmonic asymmetric combustion chamber pressure pulses with Fourier PeriodicWave
+ * 1. 128-harmonic asymmetric combustion chamber pressure pulses with Fourier PeriodicWave
  * 2. Exhaust Pipe Acoustic Waveguide (Delay line + Phase-inversion reflection + Damping)
- *    simulating acoustic waves propagating through 3-meter steel exhaust tubes
- * 3. Asymmetric bank phasing for Crossplane V8 burble and Boxer-4 UEL header pulse interference
- * 4. Stochastic combustion cycle jitter (micro-timing variance) eliminating electronic sterility
- * 5. Tailpipe & Rear Chassis Acoustic Cavity Convolver (physical impulse response)
- * 6. Throttle-load-dependent induction plenum roar (deep resonant sub-bass)
- * 7. Mechanical valvetrain chatter modulated by camshaft speed
- * 8. Real-time dynamic Turbo Boost model (spool whistle + compressor air rush + BOV flutter)
- * 9. Natural overrun decel crackles, burbles, and 2-step anti-lag fireballs
+ * 3. Discrete Cylinder Combustion Puff Pulse Generator (percussive thumps at idle/low RPM)
+ * 4. Exhaust Gas Mass Air Flow (MAF) Turbulent Noise Layer
+ * 5. Audio Perspective Modeling (Cockpit/Cabin, Tailpipe Exterior, Engine Bay)
+ * 6. Displacement-scaled sub-bass resonance and air volume
+ * 7. Asymmetric bank phasing for Crossplane V8 burble and Boxer-4 UEL header pulse interference
+ * 8. Stochastic combustion cycle jitter (micro-timing variance) eliminating electronic sterility
+ * 9. Real-time dynamic Turbo Boost model (spool whistle + compressor air rush + BOV flutter)
+ * 10. Natural overrun decel crackles, burbles, and 2-step anti-lag fireballs
  */
 class ProceduralEngineAudio {
   private ctx: AudioContext | null = null;
@@ -50,7 +54,16 @@ class ProceduralEngineAudio {
   private inductionOsc: OscillatorNode | null = null; // Intake plenum boom
   private jitterOsc: OscillatorNode | null = null; // Stochastic combustion cycle jitter LFO
 
-  // Mechanical Noise
+  // Discrete Combustion Puff Generator (Low-RPM percussive exhaust thumps)
+  private puffOsc: OscillatorNode | null = null;
+  private puffGain: GainNode | null = null;
+
+  // Exhaust Gas Flow Turbulence (MAF-scaled pink noise whoosh)
+  private gasFlowSource: AudioBufferSourceNode | null = null;
+  private gasFlowFilter: BiquadFilterNode | null = null;
+  private gasFlowGain: GainNode | null = null;
+
+  // Mechanical Valvetrain Noise
   private mechNoiseSource: AudioBufferSourceNode | null = null;
   private mechGain: GainNode | null = null;
 
@@ -64,6 +77,11 @@ class ProceduralEngineAudio {
   private pipeDelay: DelayNode | null = null;
   private pipeFeedback: GainNode | null = null;
   private pipeDamping: BiquadFilterNode | null = null;
+
+  // Perspective Acoustic Processing (Cockpit, Tailpipe, Engine Bay)
+  private perspectiveFilterLow: BiquadFilterNode | null = null;
+  private perspectiveFilterHigh: BiquadFilterNode | null = null;
+  private perspectiveChassisRes: BiquadFilterNode | null = null;
 
   // Acoustic Convolver (Tailpipe & Chassis Impulse Response)
   private tailpipeConvolver: ConvolverNode | null = null;
@@ -90,6 +108,7 @@ class ProceduralEngineAudio {
   private throttle: number = 0.0; // 0.0 to 1.0
   private loadMode: LoadMode = "neutral";
   private flywheelType: FlywheelType = "oem";
+  private perspective: AudioPerspective = "cockpit";
   private chopIdle: boolean = false;
   private is2StepActive: boolean = false;
   private exhaustPreset: ExhaustSoundPreset = "sport-resonated";
@@ -101,6 +120,7 @@ class ProceduralEngineAudio {
   private config: EngineSoundConfig = {
     cylinders: 4,
     cylinderLayout: "inline",
+    displacementLiters: 2.0,
     redlineRpm: 7000,
     exhaustType: "sport-resonated",
     hasTurbo: false,
@@ -125,6 +145,7 @@ class ProceduralEngineAudio {
     if (this.isRunning && this.ctx) {
       this.applyPeriodicWave();
       this.configureFormants(this.exhaustPreset);
+      this.configurePerspective(this.perspective);
     }
   }
 
@@ -135,6 +156,13 @@ class ProceduralEngineAudio {
       if (this.distortionNode) {
         this.distortionNode.curve = this.makeDistortionCurve(preset);
       }
+    }
+  }
+
+  public setPerspective(p: AudioPerspective) {
+    this.perspective = p;
+    if (this.isRunning && this.ctx) {
+      this.configurePerspective(p);
     }
   }
 
@@ -167,7 +195,7 @@ class ProceduralEngineAudio {
 
     const t = this.ctx.currentTime;
 
-    // 1. Primary Combustion Oscillator with 64-harmonic Fourier wave
+    // 1. Primary Combustion Oscillator with 128-harmonic Fourier wave
     this.primaryOsc = this.ctx.createOscillator();
     this.applyPeriodicWave();
 
@@ -175,41 +203,50 @@ class ProceduralEngineAudio {
     this.bankOsc = this.ctx.createOscillator();
     this.bankOsc.type = "sawtooth";
 
-    // 3. Stochastic Combustion Cycle Jitter Generator (Breaks electronic synth sterility)
+    // 3. Discrete Combustion Puff Generator (percussive cylinder thumps)
+    this.puffOsc = this.ctx.createOscillator();
+    this.puffOsc.type = "triangle";
+    this.puffGain = this.ctx.createGain();
+    this.puffGain.gain.setValueAtTime(0.18, t);
+    this.puffOsc.connect(this.puffGain);
+
+    // 4. Stochastic Combustion Cycle Jitter Generator
     this.jitterOsc = this.ctx.createOscillator();
     this.jitterOsc.type = "sine";
     this.jitterOsc.frequency.setValueAtTime(37, t);
     const jitterGain = this.ctx.createGain();
-    jitterGain.gain.setValueAtTime(1.8, t); // Micro-frequency perturbation
+    jitterGain.gain.setValueAtTime(1.8, t);
     this.jitterOsc.connect(jitterGain);
     jitterGain.connect(this.primaryOsc.frequency);
     this.jitterOsc.start(t);
 
-    // 4. Intake Induction Plenum Roar (Deep bass)
+    // 5. Intake Induction Plenum Roar (Deep bass)
     this.inductionOsc = this.ctx.createOscillator();
     this.inductionOsc.type = "sine";
 
-    // 5. Mechanical Valvetrain Chatter
+    // 6. Mechanical Valvetrain Chatter
     this.createMechanicalNoise();
 
-    // 6. Turbocharger System (Whistle + Compressor Rush)
+    // 7. Exhaust Gas Flow Turbulence (Hot gas whoosh)
+    this.createGasFlowTurbulence();
+
+    // 8. Turbocharger System (Whistle + Compressor Rush)
     if (this.config.hasTurbo) {
       this.createTurbochargerNodes();
     }
 
-    // 7. Saturation WaveShaper
+    // 9. Saturation WaveShaper
     this.distortionNode = this.ctx.createWaveShaper();
     this.distortionNode.curve = this.makeDistortionCurve(this.exhaustPreset);
 
-    // 8. 4-Stage Formant Filter Bank
+    // 10. 4-Stage Formant Filter Bank
     this.formantSub = this.ctx.createBiquadFilter();
     this.formantBody = this.ctx.createBiquadFilter();
     this.formantRasp = this.ctx.createBiquadFilter();
     this.formantHigh = this.ctx.createBiquadFilter();
     this.configureFormants(this.exhaustPreset);
 
-    // 9. Digital Waveguide Exhaust Tube Acoustic Model
-    // Simulates standing wave reflections in a 3-meter hot exhaust pipe (c ~ 420 m/s => 14ms delay)
+    // 11. Digital Waveguide Exhaust Tube Model (14ms standing wave delay)
     this.pipeDelay = this.ctx.createDelay(0.06);
     this.pipeDelay.delayTime.setValueAtTime(0.0142, t);
 
@@ -218,9 +255,15 @@ class ProceduralEngineAudio {
     this.pipeDamping.frequency.setValueAtTime(1600, t);
 
     this.pipeFeedback = this.ctx.createGain();
-    this.pipeFeedback.gain.setValueAtTime(-0.42, t); // Open-pipe boundary phase inversion
+    this.pipeFeedback.gain.setValueAtTime(-0.42, t);
 
-    // 10. Tailpipe Cavity Convolver (Spatial Physical Acoustics)
+    // 12. Perspective Acoustic Filters (Cockpit / Tailpipe / Engine Bay)
+    this.perspectiveFilterLow = this.ctx.createBiquadFilter();
+    this.perspectiveFilterHigh = this.ctx.createBiquadFilter();
+    this.perspectiveChassisRes = this.ctx.createBiquadFilter();
+    this.configurePerspective(this.perspective);
+
+    // 13. Tailpipe Cavity Convolver (Spatial Physical Acoustics)
     this.tailpipeConvolver = this.ctx.createConvolver();
     this.tailpipeConvolver.buffer = this.createTailpipeImpulseResponse();
 
@@ -230,7 +273,7 @@ class ProceduralEngineAudio {
     this.dryGain = this.ctx.createGain();
     this.dryGain.gain.setValueAtTime(0.75, t);
 
-    // 11. Mixer & Master Gains
+    // 14. Mixer & Master Gains
     this.combustionGain = this.ctx.createGain();
     this.combustionGain.gain.setValueAtTime(0.65, t);
 
@@ -241,20 +284,21 @@ class ProceduralEngineAudio {
     this.masterGain.gain.setValueAtTime(0.01, t);
     this.masterGain.gain.exponentialRampToValueAtTime(0.42, t + 0.12);
 
-    // Node Wiring Topology:
-    // [Combustion Sources] -> [combustionGain] ----------------------------------┐
-    // [Induction Source] -> [inductionGain] -------------------------------------┼-> [Distortion]
-    //                                                                            │
+    // Wiring:
+    // [Combustion + Bank + Puffs] -> [combustionGain] -------------------------┐
+    // [Induction Source] -> [inductionGain] ----------------------------------┼-> [Distortion]
+    //                                                                         │
     // [Distortion] -> [FormantSub] -> [FormantBody] -> [FormantRasp] -> [FormantHigh]
     //                                      │
-    //                                      ├-> [pipeDelay] -> [pipeDamping] -> [pipeFeedback] (Loop back to pipeDelay)
+    //                                      ├-> [pipeDelay] -> [pipeDamping] -> [pipeFeedback] (Loop)
     //                                      │        │
     //                                      ▼        ▼
     //                             [Exhaust Mix Sum]
     //                                 ├-> [dryGain] --------------------------------┐
-    //                                 └-> [tailpipeConvolver] -> [convolverGain] ---┼-> [masterGain] -> Output
+    //                                 └-> [tailpipeConvolver] -> [convolverGain] ---┼-> [Perspective Filters] -> [masterGain]
     this.primaryOsc.connect(this.combustionGain);
     this.bankOsc.connect(this.combustionGain);
+    if (this.puffGain) this.puffGain.connect(this.combustionGain);
     this.combustionGain.connect(this.distortionNode);
 
     this.inductionOsc.connect(this.inductionGain);
@@ -265,21 +309,24 @@ class ProceduralEngineAudio {
     this.formantBody.connect(this.formantRasp);
     this.formantRasp.connect(this.formantHigh);
 
-    // Connect into Waveguide loop
     this.formantHigh.connect(this.pipeDelay);
     this.pipeDelay.connect(this.pipeDamping);
     this.pipeDamping.connect(this.pipeFeedback);
     this.pipeFeedback.connect(this.pipeDelay);
 
-    // Sum Waveguide + direct into convolver & dry paths
     this.formantHigh.connect(this.dryGain);
     this.pipeDamping.connect(this.dryGain);
 
     this.formantHigh.connect(this.tailpipeConvolver);
     this.tailpipeConvolver.connect(this.convolverGain);
 
-    this.dryGain.connect(this.masterGain);
-    this.convolverGain.connect(this.masterGain);
+    // Connect sum into Perspective Filters
+    this.dryGain.connect(this.perspectiveFilterLow);
+    this.convolverGain.connect(this.perspectiveFilterLow);
+
+    this.perspectiveFilterLow.connect(this.perspectiveFilterHigh);
+    this.perspectiveFilterHigh.connect(this.perspectiveChassisRes);
+    this.perspectiveChassisRes.connect(this.masterGain);
 
     this.masterGain.connect(this.ctx.destination);
 
@@ -287,6 +334,7 @@ class ProceduralEngineAudio {
     this.primaryOsc.start(t);
     this.bankOsc.start(t);
     this.inductionOsc.start(t);
+    this.puffOsc.start(t);
 
     this.isRunning = true;
     this.updateAcousticDynamics(this.currentRpm, this.throttle);
@@ -302,21 +350,28 @@ class ProceduralEngineAudio {
         this.primaryOsc?.stop();
         this.bankOsc?.stop();
         this.inductionOsc?.stop();
+        this.puffOsc?.stop();
         this.jitterOsc?.stop();
         this.mechNoiseSource?.stop();
+        this.gasFlowSource?.stop();
         this.turboOsc?.stop();
         this.turboRushNode?.stop();
 
         this.primaryOsc?.disconnect();
         this.bankOsc?.disconnect();
         this.inductionOsc?.disconnect();
+        this.puffOsc?.disconnect();
         this.jitterOsc?.disconnect();
         this.mechNoiseSource?.disconnect();
+        this.gasFlowSource?.disconnect();
         this.turboOsc?.disconnect();
         this.turboRushNode?.disconnect();
         this.pipeDelay?.disconnect();
         this.pipeFeedback?.disconnect();
         this.tailpipeConvolver?.disconnect();
+        this.perspectiveFilterLow?.disconnect();
+        this.perspectiveFilterHigh?.disconnect();
+        this.perspectiveChassisRes?.disconnect();
       } catch {
         // Safe guard against audio lifecycle races
       }
@@ -324,13 +379,18 @@ class ProceduralEngineAudio {
       this.primaryOsc = null;
       this.bankOsc = null;
       this.inductionOsc = null;
+      this.puffOsc = null;
       this.jitterOsc = null;
       this.mechNoiseSource = null;
+      this.gasFlowSource = null;
       this.turboOsc = null;
       this.turboRushNode = null;
       this.pipeDelay = null;
       this.pipeFeedback = null;
       this.tailpipeConvolver = null;
+      this.perspectiveFilterLow = null;
+      this.perspectiveFilterHigh = null;
+      this.perspectiveChassisRes = null;
       this.isRunning = false;
     }, 160);
   }
@@ -343,7 +403,6 @@ class ProceduralEngineAudio {
 
     this.updateAcousticDynamics(clamped, this.throttle);
 
-    // Detect sudden lift-off: trigger BOV flutter & Overrun crackles
     if (prevRpm > 3400 && clamped < prevRpm - 120) {
       if (this.config.hasTurbo && prevRpm > 4200 && clamped < prevRpm - 700) {
         this.triggerBov();
@@ -367,9 +426,9 @@ class ProceduralEngineAudio {
     const isBoxer = this.config.cylinderLayout === "boxer";
     const isRotary = this.config.cylinderLayout === "rotary";
     const isI6 = this.config.cylinders === 6 && this.config.cylinderLayout === "inline";
+    const displacement = Math.max(1.4, this.config.displacementLiters || 2.0);
 
     // 1. Calculate Fundamental Firing Frequency (Hz)
-    // 4-stroke engine: F0 = (RPM / 60) * (Cylinders / 2)
     let firingMultiplier = this.config.cylinders / 2;
     if (isRotary) firingMultiplier = 3;
 
@@ -383,40 +442,54 @@ class ProceduralEngineAudio {
 
     this.primaryOsc.frequency.setTargetAtTime(baseFreq, t, 0.035);
 
-    // 2. Secondary Bank Phasing Oscillator
+    // 2. Discrete Cylinder Combustion Puff Generator (Punchy exhaust thumps at idle)
+    if (this.puffOsc && this.puffGain) {
+      // Cylinder puff frequency tracks single cylinder firing rate: (RPM / 60) * (cyl / 2)
+      this.puffOsc.frequency.setTargetAtTime(baseFreq, t, 0.03);
+      // At idle (850 RPM), puffs are distinct and strong (0.28). At high RPM, they merge into the roar (0.05).
+      const puffFade = Math.max(0.05, 0.32 - (rpm / 3500) * 0.25);
+      this.puffGain.gain.setTargetAtTime(puffFade, t, 0.04);
+    }
+
+    // 3. Secondary Bank Phasing Oscillator
     if (isV8) {
-      // Crossplane V8 has uneven 90-180-270-90 pulse spacing between banks
       const bankFreq = Math.max(10, (rpm / 60) * 2 + 0.35);
       this.bankOsc.frequency.setTargetAtTime(bankFreq, t, 0.04);
     } else if (isBoxer) {
-      // Boxer-4 with UEL headers creates a 14-22Hz beat rumble
       const boxerBeatFreq = Math.max(12, (rpm / 60) * 1.0);
       this.bankOsc.frequency.setTargetAtTime(boxerBeatFreq, t, 0.04);
     } else if (isI6) {
-      // Inline-6 has silky 3rd harmonic mechanical resonance
       const i6Harmonic = baseFreq * 1.5;
       this.bankOsc.frequency.setTargetAtTime(i6Harmonic, t, 0.035);
     } else {
-      // Standard I4 / V6 sub-harmonic body
       this.bankOsc.frequency.setTargetAtTime(baseFreq * 0.5, t, 0.04);
     }
 
-    // 3. Induction Plenum Roar (Lowpass intake boom under throttle)
-    // Frequency tracks engine displacement resonance (55Hz to 180Hz)
-    const inductionFreq = Math.min(180, 52 + (rpm / this.config.redlineRpm) * 95);
-    this.inductionOsc.frequency.setTargetAtTime(inductionFreq, t, 0.05);
+    // 4. Induction Plenum Roar (Scaled by displacement)
+    // Larger displacement engines (e.g. 5.0L V8 vs 2.0L I4) have deeper intake resonance
+    const displacementOffset = Math.max(0, (5.0 - displacement) * 8);
+    const inductionFreq = Math.min(180, (48 - displacementOffset) + (rpm / this.config.redlineRpm) * 95);
+    this.inductionOsc.frequency.setTargetAtTime(Math.max(40, inductionFreq), t, 0.05);
 
     if (this.inductionGain) {
-      // In neutral: moderate induction boom. In-gear under full load: massive induction roar
-      const loadFactor = this.loadMode === "in-gear" ? 1.3 : 1.0;
-      const targetInductionGain = (0.02 + throttle * 0.45) * loadFactor;
-      this.inductionGain.gain.setTargetAtTime(Math.min(0.6, targetInductionGain), t, 0.04);
+      const loadFactor = this.loadMode === "in-gear" ? 1.35 : 1.0;
+      const displacementWeight = Math.min(1.4, 0.85 + (displacement / 4.0) * 0.4);
+      const targetInductionGain = (0.02 + throttle * 0.46) * loadFactor * displacementWeight;
+      this.inductionGain.gain.setTargetAtTime(Math.min(0.65, targetInductionGain), t, 0.04);
     }
 
-    // 4. Dynamic Turbocharger Boost & Spool Whistle
+    // 5. Exhaust Gas Flow Turbulence (MAF Whoosh)
+    if (this.gasFlowGain && this.gasFlowFilter) {
+      const gasSpeed = (rpm / this.config.redlineRpm) * (throttle * 0.7 + 0.3);
+      const targetFlowGain = Math.min(0.18, gasSpeed * 0.16 * (displacement / 2.5));
+      this.gasFlowGain.gain.setTargetAtTime(targetFlowGain, t, 0.06);
+
+      const flowCutoff = 1200 + gasSpeed * 2400;
+      this.gasFlowFilter.frequency.setTargetAtTime(flowCutoff, t, 0.06);
+    }
+
+    // 6. Dynamic Turbocharger Boost & Spool Whistle
     if (this.turboOsc && this.turboGain) {
-      // In neutral, engine cannot build high boost (only 0.2 - 0.4 bar).
-      // Under load (in-gear), boost builds up to 1.6 - 1.8 bar!
       const maxBoost = this.loadMode === "in-gear" ? 1.75 : 0.35;
       const boostCurve = Math.max(0, (rpm - 2200) / (this.config.redlineRpm - 2200));
       this.currentBoost = boostCurve * throttle * maxBoost;
@@ -428,29 +501,27 @@ class ProceduralEngineAudio {
       this.turboGain.gain.setTargetAtTime(targetTurboGain, t, 0.08);
     }
 
-    // 5. Dynamic Formant Rasp Adjustments
+    // 7. Dynamic Formant Rasp Adjustments
     if (this.formantRasp) {
       const baseRaspFreq = this.exhaustPreset === "straight-pipe" ? 1150 : 940;
       const dynamicRasp = baseRaspFreq + (rpm / this.config.redlineRpm) * 380;
       this.formantRasp.frequency.setTargetAtTime(dynamicRasp, t, 0.06);
     }
 
-    // 6. Dynamic Waveguide Pipe Delay Tuning
+    // 8. Dynamic Waveguide Pipe Delay Tuning
     if (this.pipeDelay) {
-      // Gas temperature increases with RPM and load (from 400°C to 850°C), increasing speed of sound
-      // c_hot increases => delay time slightly decreases from 14.8ms to 12.5ms
       const tempDelay = 0.015 - (rpm / this.config.redlineRpm) * 0.0025;
       this.pipeDelay.delayTime.setTargetAtTime(tempDelay, t, 0.1);
     }
   }
 
   /**
-   * Generates a 64-harmonic Fourier series matching real automotive cylinder pressure profiles
+   * Generates a 128-harmonic Fourier series matching real automotive cylinder pressure profiles
    */
   private applyPeriodicWave() {
     if (!this.ctx || !this.primaryOsc) return;
 
-    const nHarmonics = 64;
+    const nHarmonics = 128;
     const real = new Float32Array(nHarmonics);
     const imag = new Float32Array(nHarmonics);
 
@@ -458,7 +529,6 @@ class ProceduralEngineAudio {
     const cyl = this.config.cylinders;
 
     if (layout === "inline" && cyl === 6) {
-      // Inline-6 (2JZ / S58 / RB26): Smooth, silky mechanical howl. Dominant 3rd, 6th & 12th orders
       imag[1] = 0.85;
       imag[2] = 0.35;
       imag[3] = 1.0;
@@ -471,7 +541,6 @@ class ProceduralEngineAudio {
       imag[12] = 0.38;
       imag[18] = 0.2;
     } else if (cyl === 8 && layout === "v-engine") {
-      // Crossplane V8 (LS / Coyote / M156): Heavy uneven syncopation, massive low-end punch
       imag[1] = 0.95;
       imag[2] = 1.0;
       imag[3] = 0.45;
@@ -484,7 +553,6 @@ class ProceduralEngineAudio {
       imag[12] = 0.28;
       imag[16] = 0.18;
     } else if (layout === "boxer") {
-      // Boxer-4 (Subaru EJ / FA): Asymmetric pulse train with strong sub-harmonic thumping
       imag[1] = 1.0;
       imag[2] = 0.88;
       imag[3] = 0.58;
@@ -494,7 +562,6 @@ class ProceduralEngineAudio {
       imag[8] = 0.32;
       imag[10] = 0.22;
     } else if (layout === "rotary") {
-      // Rotary Wankel (13B-REW): 3 combustion lobes with ultra-sharp odd-order rasp
       imag[1] = 0.72;
       imag[2] = 0.52;
       imag[3] = 1.0;
@@ -505,7 +572,6 @@ class ProceduralEngineAudio {
       imag[9] = 0.62;
       imag[11] = 0.45;
     } else if (cyl === 10) {
-      // V10 (BMW S85 / Carrera GT): Shrill, high-order Formula 1 scream
       imag[1] = 0.75;
       imag[2] = 0.4;
       imag[3] = 0.3;
@@ -515,7 +581,7 @@ class ProceduralEngineAudio {
       imag[8] = 0.42;
       imag[10] = 0.88;
     } else {
-      // Inline-4 (Theta II / K24 / 4G63T / EA888): Punchy 2nd & 4th order firing rasp
+      // Inline-4: sharp 2nd, 4th, 6th order firing rasp
       imag[1] = 1.0;
       imag[2] = 0.92;
       imag[3] = 0.38;
@@ -532,13 +598,70 @@ class ProceduralEngineAudio {
   }
 
   /**
+   * Configures Perspective Filtering (Cockpit Cabin / Exterior Tailpipe / Engine Bay)
+   */
+  private configurePerspective(perspective: AudioPerspective) {
+    if (!this.perspectiveFilterLow || !this.perspectiveFilterHigh || !this.perspectiveChassisRes) return;
+
+    switch (perspective) {
+      case "cockpit":
+        // In the cabin: Sound deadening cuts exterior rasp (>850Hz).
+        // Firewall transmits deep induction rumble; chassis transmits deep vibration (~65Hz) into driver seat!
+        this.perspectiveFilterLow.type = "lowpass";
+        this.perspectiveFilterLow.frequency.value = 850;
+        this.perspectiveFilterLow.Q.value = 1.4;
+
+        this.perspectiveFilterHigh.type = "peaking";
+        this.perspectiveFilterHigh.frequency.value = 160; // Firewall intake induction resonance
+        this.perspectiveFilterHigh.gain.value = 7;
+        this.perspectiveFilterHigh.Q.value = 1.8;
+
+        this.perspectiveChassisRes.type = "peaking";
+        this.perspectiveChassisRes.frequency.value = 62; // Floorpan sub-bass body vibration
+        this.perspectiveChassisRes.gain.value = 8;
+        this.perspectiveChassisRes.Q.value = 2.4;
+        break;
+
+      case "engine-bay":
+        // Under the hood: Highpass cut for low exhaust boom (<120Hz). Direct intake air hiss & valve tick.
+        this.perspectiveFilterLow.type = "highpass";
+        this.perspectiveFilterLow.frequency.value = 140;
+        this.perspectiveFilterLow.Q.value = 0.9;
+
+        this.perspectiveFilterHigh.type = "peaking";
+        this.perspectiveFilterHigh.frequency.value = 2400; // Valve train / injector click
+        this.perspectiveFilterHigh.gain.value = 6;
+        this.perspectiveFilterHigh.Q.value = 2.0;
+
+        this.perspectiveChassisRes.type = "peaking";
+        this.perspectiveChassisRes.frequency.value = 3800; // Turbo compressor air draw
+        this.perspectiveChassisRes.gain.value = 4;
+        this.perspectiveChassisRes.Q.value = 1.5;
+        break;
+
+      case "tailpipe":
+      default:
+        // Exterior Tailpipe: Full raw acoustic output with clear rasp, hot gas flow, and sharp crackles
+        this.perspectiveFilterLow.type = "allpass";
+
+        this.perspectiveFilterHigh.type = "peaking";
+        this.perspectiveFilterHigh.frequency.value = 1200; // Exhaust tip rasp
+        this.perspectiveFilterHigh.gain.value = 3;
+        this.perspectiveFilterHigh.Q.value = 1.5;
+
+        this.perspectiveChassisRes.type = "allpass";
+        break;
+    }
+  }
+
+  /**
    * Creates a 40ms Tailpipe & Rear Chassis Acoustic Cavity Impulse Response
    */
   private createTailpipeImpulseResponse(): AudioBuffer | null {
     if (!this.ctx) return null;
 
     const sampleRate = this.ctx.sampleRate;
-    const duration = 0.042; // 42ms early reflection cavity
+    const duration = 0.042;
     const length = Math.floor(sampleRate * duration);
     const buffer = this.ctx.createBuffer(2, length, sampleRate);
     const left = buffer.getChannelData(0);
@@ -547,7 +670,6 @@ class ProceduralEngineAudio {
     for (let i = 0; i < length; i++) {
       const t = i / sampleRate;
       const envelope = Math.exp(-t * 65);
-      // Resonance modes of an oval exhaust tailpipe (180Hz body, 420Hz cavity)
       const resonance =
         Math.sin(2 * Math.PI * 180 * t) * 0.6 +
         Math.sin(2 * Math.PI * 420 * t) * 0.4;
@@ -687,6 +809,45 @@ class ProceduralEngineAudio {
   }
 
   /**
+   * Generates exhaust gas flow turbulence noise
+   */
+  private createGasFlowTurbulence() {
+    if (!this.ctx || !this.masterGain) return;
+
+    const sampleRate = this.ctx.sampleRate;
+    const bufferSize = sampleRate * 2;
+    const buffer = this.ctx.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    // Pink-noise approximation for hot turbulent gas rushing out of pipe
+    let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      data[i] = (b0 + b1 + b2 + white * 0.5362) * 0.12;
+    }
+
+    this.gasFlowSource = this.ctx.createBufferSource();
+    this.gasFlowSource.buffer = buffer;
+    this.gasFlowSource.loop = true;
+
+    this.gasFlowFilter = this.ctx.createBiquadFilter();
+    this.gasFlowFilter.type = "lowpass";
+    this.gasFlowFilter.frequency.value = 1600;
+
+    this.gasFlowGain = this.ctx.createGain();
+    this.gasFlowGain.gain.value = 0.001;
+
+    this.gasFlowSource.connect(this.gasFlowFilter);
+    this.gasFlowFilter.connect(this.gasFlowGain);
+    this.gasFlowGain.connect(this.masterGain);
+
+    this.gasFlowSource.start();
+  }
+
+  /**
    * Turbocharger spool whistle oscillator
    */
   private createTurbochargerNodes() {
@@ -728,7 +889,6 @@ class ProceduralEngineAudio {
     bandpass.frequency.setValueAtTime(2600, t);
     bandpass.Q.setValueAtTime(4.5, t);
 
-    // 15Hz flutter amplitude modulation
     const flutterGain = this.ctx.createGain();
     const lfo = this.ctx.createOscillator();
     lfo.frequency.setValueAtTime(14.5, t);
@@ -842,6 +1002,8 @@ class ProceduralEngineAudio {
       exhaustPreset: this.exhaustPreset,
       loadMode: this.loadMode,
       flywheelType: this.flywheelType,
+      perspective: this.perspective,
+      displacementLiters: this.config.displacementLiters,
     };
   }
 }

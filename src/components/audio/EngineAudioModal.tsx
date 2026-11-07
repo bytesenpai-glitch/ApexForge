@@ -15,6 +15,8 @@ import {
   Settings2,
   Disc3,
   Wind,
+  Car,
+  Headphones,
 } from "lucide-react";
 import { useUiStore } from "@/stores/useUiStore";
 import { useVehicleStore } from "@/stores/useVehicleStore";
@@ -25,6 +27,7 @@ import {
   type ExhaustSoundPreset,
   type LoadMode,
   type FlywheelType,
+  type AudioPerspective,
 } from "@/services/audioEngineService";
 
 export function EngineAudioModal() {
@@ -43,6 +46,7 @@ export function EngineAudioModal() {
   const [isChopIdle, setIsChopIdle] = useState(false);
   const [loadMode, setLoadMode] = useState<LoadMode>("neutral");
   const [flywheelType, setFlywheelType] = useState<FlywheelType>("oem");
+  const [perspective, setPerspective] = useState<AudioPerspective>("cockpit");
   const [exhaustPreset, setExhaustPreset] = useState<ExhaustSoundPreset>("sport-resonated");
   const [currentBoost, setCurrentBoost] = useState(0.0);
   const [flamePops, setFlamePops] = useState(0);
@@ -59,6 +63,9 @@ export function EngineAudioModal() {
   const redline = resolved?.engine.redlineRpm ?? 7000;
   const idleRpm = 850;
   const hasTurbo = resolved?.turbo !== null || (resolved?.engine.aspiration !== "na");
+  const displacementLiters = resolved?.engine.displacementCc
+    ? Number((resolved.engine.displacementCc / 1000).toFixed(1))
+    : 2.0;
 
   // Sync audio engine configuration whenever vehicle or parts change
   useEffect(() => {
@@ -75,6 +82,7 @@ export function EngineAudioModal() {
     engineAudio.setConfig({
       cylinders: resolved.engine.cylinders,
       cylinderLayout: resolved.engine.cylinderLayout ?? "inline",
+      displacementLiters,
       redlineRpm: resolved.engine.redlineRpm ?? 7000,
       exhaustType: defaultPreset,
       hasTurbo,
@@ -84,7 +92,8 @@ export function EngineAudioModal() {
     engineAudio.setExhaustPreset(defaultPreset);
     engineAudio.setLoadMode(loadMode);
     engineAudio.setFlywheelType(flywheelType);
-  }, [resolved, hasTurbo, loadMode, flywheelType]);
+    engineAudio.setPerspective(perspective);
+  }, [resolved, hasTurbo, loadMode, flywheelType, perspective, displacementLiters]);
 
   // Clean shutdown on unmount or modal close
   useEffect(() => {
@@ -130,13 +139,9 @@ export function EngineAudioModal() {
       const dt = Math.min(0.05, (now - lastTime) / 1000);
       lastTime = now;
 
-      // 1. Determine active throttle input
       let effectiveThrottle = isThrottlingRef.current ? 1.0 : throttleRef.current;
       if (is2StepRef.current) effectiveThrottle = 1.0;
 
-      // 2. Flywheel Inertia & Load Dynamics
-      // In Neutral: OEM flywheel takes ~2.0s to rev to redline; Lightweight takes ~1.5s
-      // In Gear (Dyno Pull): takes ~4.2s to rev to redline under full load
       const isNeutral = loadModeRef.current === "neutral";
       const isLightFlywheel = flywheelRef.current === "lightweight";
 
@@ -144,15 +149,12 @@ export function EngineAudioModal() {
       if (isNeutral) {
         maxRpmRate = isLightFlywheel ? 4100 : 3100; // RPM/sec
       } else {
-        // Under load in gear
         maxRpmRate = isLightFlywheel ? 1550 : 1300; // RPM/sec
       }
 
-      // 3. Torque curve modeling: peak acceleration in mid-RPM, tapering near redline
       const rpmRatio = (currentLocalRpm - idleRpm) / (redline - idleRpm);
       const torqueCurve = 0.75 + 0.35 * Math.sin(Math.PI * Math.min(1, rpmRatio));
 
-      // 4. Turbo boost calculation
       let targetBoost = 0.0;
       if (hasTurbo && effectiveThrottle > 0.1) {
         const boostCap = isNeutral ? 0.35 : 1.75;
@@ -160,9 +162,7 @@ export function EngineAudioModal() {
         targetBoost = boostSpool * effectiveThrottle * boostCap;
       }
 
-      // 5. Differential RPM update
       if (is2StepRef.current) {
-        // 2-Step launch control cut at 5200 RPM with violent ignition cuts
         const target = 5200 + (Math.random() * 280 - 140);
         currentLocalRpm += (target - currentLocalRpm) * 0.25;
         if (Math.random() > 0.62) {
@@ -170,23 +170,18 @@ export function EngineAudioModal() {
           setFlamePops((p) => p + 1);
         }
       } else if (effectiveThrottle > 0.02) {
-        // Accelerating under throttle
         const accelerationRate = maxRpmRate * effectiveThrottle * torqueCurve;
         currentLocalRpm += accelerationRate * dt;
 
         if (currentLocalRpm >= redline - 40) {
-          // Hard cut on redline rev limiter
           engineAudio.triggerPopAndBang();
           setFlamePops((p) => p + 1);
           currentLocalRpm = redline - 240;
         }
       } else {
-        // Decelerating (Engine braking)
-        // Rate of drop is ~2200 RPM/sec at high RPM, softening near idle
         const brakingRate = 1800 + rpmRatio * 800;
         currentLocalRpm -= brakingRate * dt;
 
-        // Soft idle cushion
         if (currentLocalRpm < idleRpm + 150) {
           currentLocalRpm += (idleRpm - currentLocalRpm) * 0.15;
         }
@@ -223,6 +218,12 @@ export function EngineAudioModal() {
   const handleSelectFlywheel = (type: FlywheelType) => {
     setFlywheelType(type);
     engineAudio.setFlywheelType(type);
+  };
+
+  // Handle Perspective change
+  const handleSelectPerspective = (p: AudioPerspective) => {
+    setPerspective(p);
+    engineAudio.setPerspective(p);
   };
 
   // Handle Chop Idle toggle
@@ -291,14 +292,14 @@ export function EngineAudioModal() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold text-slate-100">
-                  Физический акустический симулятор ДВС (엔진 사운드 시뮬레이터)
+                  Акустический симулятор ДВС (엔진 사운드 시뮬레이터)
                 </h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 font-semibold">
-                  Waveguide 3D Audio
+                  Waveguide & Impulse
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                {resolved.engine.code} ({resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl) · {resolved.engine.valvetrain?.toUpperCase() ?? "DOHC"} · Отсечка: {redline} RPM
+                {resolved.engine.code} ({displacementLiters}L {resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl) · {resolved.engine.valvetrain?.toUpperCase() ?? "DOHC"} · Redline: {redline} RPM
               </p>
             </div>
           </div>
@@ -381,6 +382,52 @@ export function EngineAudioModal() {
               }`}
               style={{ width: `${isPlaying ? rpmPercent : 0}%` }}
             />
+          </div>
+
+          {/* Audio Perspective Switcher (Cockpit vs Tailpipe vs Engine Bay) */}
+          <div className="w-full max-w-lg bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-300 font-semibold px-1">
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <Headphones className="w-3.5 h-3.5 text-indigo-400" />
+                Точка прослушивания (Акустическая перспектива):
+              </span>
+              <span className="font-mono text-indigo-400 uppercase text-[11px]">
+                {perspective === "cockpit" ? "В салоне" : perspective === "tailpipe" ? "У выхлопа" : "Под капотом"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                {
+                  id: "cockpit" as const,
+                  label: "В салоне за рулем",
+                  desc: "Бас в грудь, как в авто",
+                },
+                {
+                  id: "tailpipe" as const,
+                  label: "У насадки выхлопа",
+                  desc: "Звон, газы и отстрелы",
+                },
+                {
+                  id: "engine-bay" as const,
+                  label: "Под капотом",
+                  desc: "Впуск и механика ГРМ",
+                },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelectPerspective(item.id)}
+                  className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer border ${
+                    perspective === item.id
+                      ? "bg-indigo-500/20 border-indigo-500/60 text-indigo-300 font-bold shadow-sm shadow-indigo-950"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <div className="text-[11px] font-bold">{item.label}</div>
+                  <div className="text-[9px] text-slate-500 font-mono">{item.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Physics Engine Controls: Load Mode & Flywheel Selection */}
@@ -486,7 +533,7 @@ export function EngineAudioModal() {
           {/* Engine Parameters & Cam Tuning */}
           <div className="flex items-center gap-2 flex-wrap justify-center text-xs">
             <span className="px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700 font-mono text-slate-300">
-              Архитектура: <strong>{resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl</strong>
+              Архитектура: <strong>{displacementLiters}L {resolved.engine.cylinderLayout?.toUpperCase()} {resolved.engine.cylinders}-Cyl</strong>
             </span>
             {hasTurbo && (
               <span className="px-3 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 font-mono text-cyan-300">
@@ -606,10 +653,10 @@ export function EngineAudioModal() {
 
           <div className="text-center space-y-1">
             <p className="text-[11px] text-slate-400 font-mono">
-              Подсказка: Удерживай клавишу <strong>ПРОБЕЛ (Spacebar)</strong> для педали газа.
+              Подсказка: Выбери точку <strong>«В салоне за рулем»</strong> для звука из водительского кресла с басом кузова.
             </p>
             <p className="text-[10px] text-slate-500 font-mono">
-              В режиме <strong>«Разгон в пол»</strong> мотор разгоняется плавно с ростом наддува турбины (до 1.75 bar).
+              Удерживай <strong>ПРОБЕЛ</strong> для педали газа. На холостых отчетливо слышны дискретные хлопки цилиндров.
             </p>
           </div>
         </div>

@@ -15,6 +15,7 @@ test("Audio Engine Service", async (t) => {
     engineAudio.setConfig({
       cylinders: 8,
       cylinderLayout: "v-engine",
+      displacementLiters: 5.2,
       redlineRpm: 8250,
       exhaustType: "straight-pipe",
       hasTurbo: false,
@@ -24,6 +25,7 @@ test("Audio Engine Service", async (t) => {
 
     const status = engineAudio.getStatus();
     assert.equal(status.rpm, 850);
+    assert.equal(status.displacementLiters, 5.2);
   });
 
   await t.test("allows setting throttle, exhaust presets, and chop idle", () => {
@@ -32,6 +34,7 @@ test("Audio Engine Service", async (t) => {
     engineAudio.setChopIdle(true);
     engineAudio.setLoadMode("in-gear");
     engineAudio.setFlywheelType("lightweight");
+    engineAudio.setPerspective("cockpit");
 
     const status = engineAudio.getStatus();
     assert.equal(status.throttle, 0.75);
@@ -39,6 +42,7 @@ test("Audio Engine Service", async (t) => {
     assert.equal(status.isChopIdle, true);
     assert.equal(status.loadMode, "in-gear");
     assert.equal(status.flywheelType, "lightweight");
+    assert.equal(status.perspective, "cockpit");
   });
 
   await t.test("handles triggerBov and triggerPopAndBang safely without DOM AudioContext in Node", () => {
