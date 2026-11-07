@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getEngine, getTransmission } from "@at-sim/parts";
+import { getEngine, getTransmission } from "../parts/swap";
 import { getVehicle, listVehicles } from "./lookup";
 import { vehicleCanSwap, vehicleSwaps } from "./catalog";
 

@@ -25,12 +25,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "@at-sim/parts": [
-        "./src/domain/parts/index.ts"
-      ],
-      "@at-sim/vehicles": [
-        "./src/domain/vehicles/index.ts"
       ]
     }
   },

@@ -4,9 +4,8 @@ import {
   getPart,
   getTransmission,
   listSwaps,
-  type ChassisFitment,
-  type SwapMatch,
-} from "@at-sim/parts";
+} from "../parts/swap";
+import type { ChassisFitment, SwapMatch } from "../parts/types";
 import type { Vehicle } from "./types";
 
 export function toChassis(vehicle: Vehicle): ChassisFitment {

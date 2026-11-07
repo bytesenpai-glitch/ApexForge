@@ -1,5 +1,5 @@
-import type { Vehicle, Brand, Region } from "@at-sim/vehicles";
-import { getEngine } from "@at-sim/parts";
+import type { Vehicle, Brand, Region } from "@/domain/vehicles/types";
+import { getEngine } from "@/domain/parts/swap";
 import type { DriveFilter, VehicleSortOption } from "@/types/tuning.types";
 
 export interface VehicleFilterCriteria {

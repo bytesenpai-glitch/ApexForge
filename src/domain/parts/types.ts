@@ -121,6 +121,7 @@ export interface Engine {
   valvetrain?: string;
   cylinderLayout?: CylinderLayout;
   weightKg?: number;
+  notes?: string;
   manualReference?: OemManualReference;
 }
 
@@ -140,6 +141,7 @@ export interface Transmission {
   gearRatios?: number[];
   finalDrive?: number;
   weightKg?: number;
+  notes?: string;
   manualReference?: OemManualReference;
 }
 

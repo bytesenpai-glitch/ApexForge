@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { listVehicles, type Brand, type Region, type Vehicle } from "@at-sim/vehicles";
+import { listVehicles } from "@/domain/vehicles/lookup";
+import type { Brand, Region, Vehicle } from "@/domain/vehicles/types";
 import type { DriveFilter, VehicleSortOption } from "@/types/tuning.types";
 
 interface VehicleState {

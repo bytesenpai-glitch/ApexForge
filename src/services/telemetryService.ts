@@ -1,4 +1,4 @@
-import { calculateBuildTelemetry } from "@/domain/parts/index";
+import { calculateBuildTelemetry } from "@/domain/parts/telemetry";
 import type { FormattedTelemetry, ResolvedBuildParts } from "@/types/tuning.types";
 import type { Vehicle } from "@/domain/vehicles/types";
 

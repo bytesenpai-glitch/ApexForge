@@ -1,4 +1,4 @@
-import type { Layout, SwapTag } from "@at-sim/parts";
+import type { Layout, SwapTag } from "../parts/types";
 
 export type Region = "japan" | "germany" | "usa" | "korea";
 
@@ -11,10 +11,12 @@ export type Brand =
   | "honda"
   | "subaru"
   | "mazda"
+  | "mitsubishi"
   | "bmw"
   | "volkswagen"
   | "audi"
   | "mercedes"
+  | "porsche"
   | "chevrolet"
   | "ford"
   | "dodge";

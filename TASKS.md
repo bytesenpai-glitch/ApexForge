@@ -57,3 +57,11 @@
   - [x] Add vehicle status pill with active engine, transmission, power, and layout tags.
   - [x] Add pulsating green `LOCAL-FIRST` status indicator badge.
 
+- [x] **Task 10: Codebase Audit & Architectural Remediation**
+  - [x] Fix TypeScript errors in parts domain (`Engine` notes property, `BrandGroup` type validation).
+  - [x] Eliminate catalog duplicates (Veloster N JS, BMW S65 & S85).
+  - [x] Match missing bellhousings (Mitsubishi W6MAA 6MT, Toyota Gazoo RC61, AMG 722.9 7G-Tronic, Audi DL501 7-Speed, Ford Coyote MT82, GM LS T56).
+  - [x] Eradicate barrel files (`src/domain/parts/index.ts`, `src/domain/vehicles/index.ts`) and dead demo file (`demo.ts`).
+  - [x] Verify zero TypeScript errors (`tsc --noEmit`), 31/31 passing unit tests, and successful Turbopack production build.
+
+

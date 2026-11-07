@@ -14,22 +14,24 @@ import {
   listCoolings,
   listDifferentials,
   listMounts,
-  type BrakePart,
-  type CoolingPart,
-  type DifferentialPart,
-  type Driveline,
-  type EcuPart,
-  type Engine,
-  type ExhaustPart,
-  type Fitment,
-  type IntakePart,
-  type MountPart,
-  type Part,
-  type SuspensionPart,
-  type SwapMatch,
-  type Transmission,
-  type TurboPart,
-} from "@/domain/parts/index";
+} from "@/domain/parts/swap";
+import type {
+  BrakePart,
+  CoolingPart,
+  DifferentialPart,
+  Driveline,
+  EcuPart,
+  Engine,
+  ExhaustPart,
+  Fitment,
+  IntakePart,
+  MountPart,
+  Part,
+  SuspensionPart,
+  SwapMatch,
+  Transmission,
+  TurboPart,
+} from "@/domain/parts/types";
 import { vehicleSwaps } from "@/domain/vehicles/catalog";
 import type { Vehicle } from "@/domain/vehicles/types";
 import type {

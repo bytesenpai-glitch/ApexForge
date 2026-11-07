@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { calculateBuildTelemetry } from "./telemetry";
 import {
-  calculateBuildTelemetry,
   getBrake,
   getEcu,
   getEngine,
@@ -16,7 +16,7 @@ import {
   listParts,
   listSuspensions,
   listTurbos,
-} from "./index";
+} from "./swap";
 
 describe("Bolt-on parts & Modular Tuning Engine", () => {
   it("loads all new bolt-on categories into registry", () => {
