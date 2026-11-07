@@ -51,6 +51,58 @@ export function getEngine(id: string): Engine | undefined {
   return part?.kind === "engine" ? part : undefined;
 }
 
+export function inferCylinderLayout(engine: {
+  cylinderLayout?: import("./types").CylinderLayout;
+  cylinders: number;
+  family?: string;
+  code?: string;
+  maker?: string;
+  valvetrain?: string;
+}): import("./types").CylinderLayout {
+  if (engine.cylinderLayout) return engine.cylinderLayout;
+  const f = (engine.family || "").toLowerCase();
+  const c = (engine.code || "").toLowerCase();
+  const v = (engine.valvetrain || "").toLowerCase();
+  if (
+    f.includes("boxer") ||
+    f.includes("ej") ||
+    f.includes("fa") ||
+    c.includes("ej") ||
+    c.includes("fa") ||
+    v.includes("boxer") ||
+    f.includes("flat")
+  ) {
+    return "boxer";
+  }
+  if (f.includes("rotary") || f.includes("wankel") || c.includes("13b") || c.includes("20b")) {
+    return "rotary";
+  }
+  if (
+    engine.cylinders === 8 ||
+    engine.cylinders === 10 ||
+    engine.cylinders === 12 ||
+    f.includes("v6") ||
+    f.includes("v8") ||
+    f.includes("v10") ||
+    f.includes("v12") ||
+    f.includes("vr") ||
+    f.includes("lambda") ||
+    f.includes("coyote") ||
+    f.includes("ls") ||
+    f.includes("hemi") ||
+    f.includes("hellcat") ||
+    f.includes("voodoo") ||
+    f.includes("lt4") ||
+    f.includes("1uz") ||
+    f.includes("s85") ||
+    f.includes("s65") ||
+    f.includes("m156")
+  ) {
+    return "v-engine";
+  }
+  return "inline";
+}
+
 export function getTransmission(id: string): Transmission | undefined {
   const part = byId.get(id);
   return part?.kind === "transmission" ? part : undefined;

@@ -27,6 +27,7 @@ import {
   type AudioPerspective,
 } from "@/services/audioEngineService";
 import { resolveEngineFiringOrder } from "@/domain/parts/firingOrders";
+import { inferCylinderLayout } from "@/domain/parts/swap";
 import { FiringOrderVisualizer } from "./FiringOrderVisualizer";
 
 export function EngineAudioModal() {
@@ -67,8 +68,9 @@ export function EngineAudioModal() {
 
   const firingOrderSpec = useMemo(() => {
     if (!resolved) return null;
+    const layout = inferCylinderLayout(resolved.engine);
     return resolveEngineFiringOrder(
-      resolved.engine.cylinderLayout ?? "inline",
+      layout,
       resolved.engine.cylinders,
       resolved.engine.family,
       resolved.engine.code
@@ -87,9 +89,10 @@ export function EngineAudioModal() {
     }
 
     setExhaustPreset(defaultPreset);
+    const layout = inferCylinderLayout(resolved.engine);
     engineAudio.setConfig({
       cylinders: resolved.engine.cylinders,
-      cylinderLayout: resolved.engine.cylinderLayout ?? "inline",
+      cylinderLayout: layout,
       displacementLiters,
       redlineRpm: resolved.engine.redlineRpm ?? 7000,
       exhaustType: defaultPreset,

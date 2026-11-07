@@ -81,6 +81,12 @@ class ProceduralEngineAudio {
   private gearWhineOsc: OscillatorNode | null = null;
   private gearWhineGain: GainNode | null = null;
 
+  // Physical Engine Architecture Modulators (Subaru Boxer UEL & Crossplane V8)
+  private boxerLfo: OscillatorNode | null = null;
+  private boxerLfoGain: GainNode | null = null;
+  private crossplaneLfo: OscillatorNode | null = null;
+  private crossplaneLfoGain: GainNode | null = null;
+
   // Digital Waveguide Exhaust Tube Model (Acoustic Standing Waves)
   private pipeDelay: DelayNode | null = null;
   private pipeFeedback: GainNode | null = null;
@@ -261,6 +267,21 @@ class ProceduralEngineAudio {
     this.gearWhineOsc.connect(this.gearWhineGain);
     this.gearWhineOsc.start(t);
 
+    // 8.6. Physical Architecture Tremolo Modulators (Subaru Boxer UEL & Crossplane V8)
+    this.boxerLfo = this.ctx.createOscillator();
+    this.boxerLfo.type = "sine";
+    this.boxerLfoGain = this.ctx.createGain();
+    this.boxerLfoGain.gain.setValueAtTime(0.0001, t);
+    this.boxerLfo.connect(this.boxerLfoGain);
+    this.boxerLfo.start(t);
+
+    this.crossplaneLfo = this.ctx.createOscillator();
+    this.crossplaneLfo.type = "sine";
+    this.crossplaneLfoGain = this.ctx.createGain();
+    this.crossplaneLfoGain.gain.setValueAtTime(0.0001, t);
+    this.crossplaneLfo.connect(this.crossplaneLfoGain);
+    this.crossplaneLfo.start(t);
+
     // 9. Saturation WaveShaper (Hyperbolic Tangent soft tube/exhaust compression)
     this.distortionNode = this.ctx.createWaveShaper();
     this.distortionNode.curve = this.makeDistortionCurve(this.exhaustPreset);
@@ -341,6 +362,8 @@ class ProceduralEngineAudio {
     this.primaryOsc.connect(this.combustionGain);
     if (this.bankGain) this.bankGain.connect(this.combustionGain);
     if (this.puffGain) this.puffGain.connect(this.combustionGain);
+    if (this.boxerLfoGain) this.boxerLfoGain.connect(this.combustionGain.gain);
+    if (this.crossplaneLfoGain) this.crossplaneLfoGain.connect(this.combustionGain.gain);
 
     this.combustionGain.connect(this.distortionNode);
 
@@ -409,6 +432,8 @@ class ProceduralEngineAudio {
         this.gasFlowSource?.stop();
         this.turboOsc?.stop();
         this.gearWhineOsc?.stop();
+        this.boxerLfo?.stop();
+        this.crossplaneLfo?.stop();
 
         this.primaryOsc?.disconnect();
         this.bankOsc?.disconnect();
@@ -424,6 +449,10 @@ class ProceduralEngineAudio {
         this.turboGain?.disconnect();
         this.gearWhineOsc?.disconnect();
         this.gearWhineGain?.disconnect();
+        this.boxerLfo?.disconnect();
+        this.boxerLfoGain?.disconnect();
+        this.crossplaneLfo?.disconnect();
+        this.crossplaneLfoGain?.disconnect();
         this.pipeDelay?.disconnect();
         this.pipeFeedback?.disconnect();
         this.tailpipeConvolver?.disconnect();
@@ -442,6 +471,10 @@ class ProceduralEngineAudio {
       this.puffOsc = null;
       this.puffGain = null;
       this.jitterOsc = null;
+      this.boxerLfo = null;
+      this.boxerLfoGain = null;
+      this.crossplaneLfo = null;
+      this.crossplaneLfoGain = null;
       this.distortionNode = null;
       this.masterGain = null;
       this.isRunning = false;
@@ -522,6 +555,38 @@ class ProceduralEngineAudio {
         // Inline-4: Subtle valve overlap rasp
         this.bankOsc.frequency.setTargetAtTime(Math.max(15, (rpm / 60) * 2), t, 0.04);
         this.bankGain.gain.setTargetAtTime(0.08, t, 0.04);
+      }
+    }
+
+    const isBoxer = layout === "boxer";
+    const isFlatplaneV8 =
+      cyl === 8 &&
+      ((this.config.family || "").toLowerCase().includes("voodoo") ||
+        (this.config.engineCode || "").toLowerCase().includes("voodoo") ||
+        (this.config.engineCode || "").toLowerCase().includes("gt350"));
+    const isCrossplaneV8 = cyl === 8 && layout === "v-engine" && !isFlatplaneV8;
+
+    // 3.5. Dynamic Boxer UEL Gallop Tremolo Modulator (ba-BUMP ... ba-BUMP heartbeat)
+    if (this.boxerLfo && this.boxerLfoGain) {
+      if (isBoxer) {
+        const boxerBeatFreq = Math.max(8, rpm / 60);
+        this.boxerLfo.frequency.setTargetAtTime(boxerBeatFreq, t, 0.035);
+        const boxerDepth = Math.max(0.18, 0.38 - (rpm / this.config.redlineRpm) * 0.16);
+        this.boxerLfoGain.gain.setTargetAtTime(boxerDepth, t, 0.04);
+      } else {
+        this.boxerLfoGain.gain.setTargetAtTime(0.0001, t, 0.04);
+      }
+    }
+
+    // 3.6. Dynamic Crossplane V8 Low-Frequency Muscle Loaf Modulator (0.5E waltz syncopation)
+    if (this.crossplaneLfo && this.crossplaneLfoGain) {
+      if (isCrossplaneV8) {
+        const v8StumbleFreq = Math.max(5, rpm / 120);
+        this.crossplaneLfo.frequency.setTargetAtTime(v8StumbleFreq, t, 0.04);
+        const v8Depth = Math.max(0.12, 0.26 - (rpm / this.config.redlineRpm) * 0.14);
+        this.crossplaneLfoGain.gain.setTargetAtTime(v8Depth, t, 0.04);
+      } else {
+        this.crossplaneLfoGain.gain.setTargetAtTime(0.0001, t, 0.04);
       }
     }
 
@@ -666,15 +731,20 @@ class ProceduralEngineAudio {
         imag[24] = 0.38; // 12.0E
       }
     } else if (layout === "boxer" && cyl === 4) {
-      // Boxer-4 (Subaru EJ20 / EJ25 with UEL):
-      // Unequal length headers cause acoustic delay beating at 1.0E (k=2). Unmistakable Subie rumble!
-      imag[1] = 0.45;  // 0.5E
-      imag[2] = 0.82;  // 1.0E (Subie boxer beat frequency!)
+      // Boxer-4 (Subaru EJ20 / EJ25 with UEL Headers):
+      // Firing order 1-3-2-4 with 1.3m unequal length crossover pipe.
+      // Delivers coupled pairs of pulses: [1-3] ... [2-4], producing the iconic low-end thump.
+      imag[1] = 0.65;  // 0.5E (Subie deep cycle wobble)
+      imag[2] = 0.95;  // 1.0E (Dominant UEL pulse-pair beat frequency!)
+      imag[3] = 0.35;  // 1.5E (Asymmetric crossover resonance)
       imag[4] = 1.0;   // 2.0E (Firing fundamental)
-      imag[6] = 0.35;  // 3.0E
-      imag[8] = 0.72;  // 4.0E
-      imag[12] = 0.48; // 6.0E
-      imag[16] = 0.32; // 8.0E
+      imag[6] = 0.45;  // 3.0E
+      imag[8] = 0.85;  // 4.0E (Exhaust valve opening bark)
+      imag[10] = 0.30; // 5.0E
+      imag[12] = 0.58; // 6.0E
+      imag[16] = 0.42; // 8.0E
+      imag[20] = 0.25; // 10.0E
+      imag[24] = 0.18; // 12.0E
     } else if (layout === "boxer" && cyl === 6) {
       // Boxer Flat-6 (Porsche 911 GT3 4.0L):
       // Firing fundamental 3.0E (k=6) with dry metallic air-cooled rasp!
@@ -779,30 +849,32 @@ class ProceduralEngineAudio {
     }
 
     switch (perspective) {
-      case "tailpipe":
+      case "tailpipe": {
+        const isBoxer = this.config.cylinderLayout === "boxer";
         // Exterior Tailpipe:
-        // - Deep 85Hz chest-thumping bass (+6.0 dB)
-        // - 190Hz 3-inch exhaust pipe cavity resonance (+4.5 dB)
-        // - 1250Hz exhaust tip metallic rasp (+5.5 dB)
-        // - 6800Hz high-shelf air dissipation (-3.5 dB)
+        // - Deep 85Hz chest-thumping bass (78Hz for Subaru Boxer)
+        // - 190Hz 3-inch exhaust pipe cavity resonance
+        // - 1250Hz metallic tip rasp (680Hz throaty burble for Boxer)
+        // - 6800Hz high-shelf air dissipation
         this.perspectiveFilterLow.type = "lowshelf";
-        this.perspectiveFilterLow.frequency.value = 85;
-        this.perspectiveFilterLow.gain.value = 6.0;
+        this.perspectiveFilterLow.frequency.value = isBoxer ? 78 : 85;
+        this.perspectiveFilterLow.gain.value = isBoxer ? 7.5 : 6.0;
 
         this.perspectiveFilterHigh.type = "peaking";
-        this.perspectiveFilterHigh.frequency.value = 1250;
-        this.perspectiveFilterHigh.gain.value = 5.5;
-        this.perspectiveFilterHigh.Q.value = 2.2;
+        this.perspectiveFilterHigh.frequency.value = isBoxer ? 680 : 1250;
+        this.perspectiveFilterHigh.gain.value = isBoxer ? 6.5 : 5.5;
+        this.perspectiveFilterHigh.Q.value = isBoxer ? 1.8 : 2.2;
 
         this.perspectiveChassisRes.type = "peaking";
-        this.perspectiveChassisRes.frequency.value = 190;
-        this.perspectiveChassisRes.gain.value = 4.5;
+        this.perspectiveChassisRes.frequency.value = isBoxer ? 175 : 190;
+        this.perspectiveChassisRes.gain.value = isBoxer ? 5.5 : 4.5;
         this.perspectiveChassisRes.Q.value = 2.0;
 
         this.perspectiveAirRollOff.type = "highshelf";
         this.perspectiveAirRollOff.frequency.value = 6800;
         this.perspectiveAirRollOff.gain.value = -3.5;
         break;
+      }
 
       case "engine-bay":
         // Under the Hood:
