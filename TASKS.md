@@ -93,6 +93,16 @@
   - [x] Add SVG glow reticle and node hover/active states across Top and Side CAD views.
   - [x] Verify zero TypeScript errors (`tsc --noEmit`), 47/47 passing tests, Next.js 16 Turbopack production build, and deploy to Vercel production (`https://apexforge-sigma.vercel.app`).
 
+- [x] **Task 15: Acoustic Engine 2.0 & Ergonomic Zero-Scroll Workstation Architecture**
+  - [x] Implement Straight-Cut Dogbox Racing Gear Whine (`gearWhineOsc` / `gearWhineGain` 380Hz-2580Hz proportional to RPM and throttle load) in in-gear dyno mode (`audioEngineService.ts`).
+  - [x] Implement Flatplane V8 180° crank harmonic series (`imag[4]=1.0`, `imag[8]=0.85` for Shelby GT350 5.2L Voodoo scream) distinct from Crossplane V8 asymmetric syncopated rumble (`imag[1]=1.0`, `imag[2]=0.95`).
+  - [x] Redesign `EngineAudioModal.tsx` into an ergonomic Dual-Wing Cockpit (`max-w-5xl max-h-[92vh] overflow-hidden`) eliminating vertical scrolling:
+    - Left Wing: Circular Tachometer gauge, Boost meter, RPM arc bar, and animated `FiringOrderVisualizer`.
+    - Right Wing: Acoustic perspective, dyno load, flywheel inertia, exhaust profile chips, and tactile pedals.
+  - [x] Implement hotkey controls: `[Space / W / Up]` for progressive throttle, `[B]` for 2-step anti-lag fireballs, `[S]` for blow-off valve flutter.
+  - [x] Transform `GarageView.tsx` into a 2-Column Responsive Cockpit Workstation (`xl:col-span-5` sticky telemetry & advisor deck, `xl:col-span-7` parts configurator) eliminating page-height scrolling.
+  - [x] Verify zero TypeScript errors (`tsc --noEmit`), 47/47 passing tests, Next.js 16 Turbopack production build, and deploy to Vercel production (`https://apexforge-sigma.vercel.app`).
+
 
 
 
