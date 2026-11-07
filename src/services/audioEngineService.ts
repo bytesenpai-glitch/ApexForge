@@ -73,6 +73,10 @@ class ProceduralEngineAudio {
   private turboGain: GainNode | null = null;
   private currentBoost: number = 0.0; // Bar (0.0 to 1.8)
 
+  // Straight-Cut Dogbox Transmission Whine (In-Gear Load Mode)
+  private gearWhineOsc: OscillatorNode | null = null;
+  private gearWhineGain: GainNode | null = null;
+
   // Digital Waveguide Exhaust Tube Model (Acoustic Standing Waves)
   private pipeDelay: DelayNode | null = null;
   private pipeFeedback: GainNode | null = null;
@@ -235,6 +239,17 @@ class ProceduralEngineAudio {
       this.createTurbochargerNodes();
     }
 
+    // 8.5. Straight-Cut Dogbox Transmission Whine (active in load mode)
+    this.gearWhineOsc = this.ctx.createOscillator();
+    this.gearWhineOsc.type = "sine";
+    this.gearWhineGain = this.ctx.createGain();
+    this.gearWhineGain.gain.setValueAtTime(0.0001, t);
+    this.gearWhineOsc.connect(this.gearWhineGain);
+    if (this.masterGain) {
+      this.gearWhineGain.connect(this.masterGain);
+    }
+    this.gearWhineOsc.start(t);
+
     // 9. Saturation WaveShaper
     this.distortionNode = this.ctx.createWaveShaper();
     this.distortionNode.curve = this.makeDistortionCurve(this.exhaustPreset);
@@ -356,6 +371,7 @@ class ProceduralEngineAudio {
         this.gasFlowSource?.stop();
         this.turboOsc?.stop();
         this.turboRushNode?.stop();
+        this.gearWhineOsc?.stop();
 
         this.primaryOsc?.disconnect();
         this.bankOsc?.disconnect();
@@ -366,6 +382,8 @@ class ProceduralEngineAudio {
         this.gasFlowSource?.disconnect();
         this.turboOsc?.disconnect();
         this.turboRushNode?.disconnect();
+        this.gearWhineOsc?.disconnect();
+        this.gearWhineGain?.disconnect();
         this.pipeDelay?.disconnect();
         this.pipeFeedback?.disconnect();
         this.tailpipeConvolver?.disconnect();
@@ -513,6 +531,18 @@ class ProceduralEngineAudio {
       const tempDelay = 0.015 - (rpm / this.config.redlineRpm) * 0.0025;
       this.pipeDelay.delayTime.setTargetAtTime(tempDelay, t, 0.1);
     }
+
+    // 9. Straight-Cut Dogbox Transmission Gear Whine (In-Gear Mode)
+    if (this.gearWhineOsc && this.gearWhineGain) {
+      if (this.loadMode === "in-gear") {
+        const whinePitch = 380 + (rpm / this.config.redlineRpm) * 2200;
+        const whineGain = Math.min(0.065, 0.005 + (rpm / this.config.redlineRpm) * 0.05 * (throttle * 0.7 + 0.3));
+        this.gearWhineOsc.frequency.setTargetAtTime(whinePitch, t, 0.05);
+        this.gearWhineGain.gain.setTargetAtTime(whineGain, t, 0.05);
+      } else {
+        this.gearWhineGain.gain.setTargetAtTime(0.0001, t, 0.05);
+      }
+    }
   }
 
   /**
@@ -528,6 +558,12 @@ class ProceduralEngineAudio {
     const layout = this.config.cylinderLayout;
     const cyl = this.config.cylinders;
 
+    const isFlatplaneV8 =
+      cyl === 8 &&
+      ((this.config.family && this.config.family.toLowerCase().includes("voodoo")) ||
+        (this.config.engineCode && this.config.engineCode.toLowerCase().includes("voodoo")) ||
+        (this.config.engineCode && this.config.engineCode.toLowerCase().includes("gt350")));
+
     if (layout === "inline" && cyl === 6) {
       imag[1] = 0.85;
       imag[2] = 0.35;
@@ -541,10 +577,30 @@ class ProceduralEngineAudio {
       imag[12] = 0.38;
       imag[18] = 0.2;
     } else if (cyl === 8 && layout === "v-engine") {
-      imag[1] = 0.95;
-      imag[2] = 1.0;
-      imag[3] = 0.45;
-      imag[4] = 0.82;
+      if (isFlatplaneV8) {
+        // Flatplane V8 (Shelby GT350 5.2L Voodoo): 180-deg crank, screaming European high-frequency howl
+        imag[1] = 0.65;
+        imag[2] = 0.52;
+        imag[4] = 1.0;
+        imag[6] = 0.62;
+        imag[8] = 0.85;
+        imag[10] = 0.38;
+        imag[12] = 0.52;
+        imag[16] = 0.32;
+      } else {
+        // Crossplane V8 (GM LS3/LT4, Ford Coyote 5.0, Dodge 392/Hellcat): Asymmetric syncopated heavy burble
+        imag[1] = 1.0;
+        imag[2] = 0.95;
+        imag[3] = 0.45;
+        imag[4] = 0.82;
+        imag[5] = 0.32;
+        imag[6] = 0.65;
+        imag[7] = 0.22;
+        imag[8] = 0.54;
+        imag[10] = 0.32;
+        imag[12] = 0.28;
+        imag[16] = 0.18;
+      }
       imag[5] = 0.26;
       imag[6] = 0.65;
       imag[7] = 0.2;
