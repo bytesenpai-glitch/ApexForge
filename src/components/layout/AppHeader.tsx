@@ -14,6 +14,8 @@ import {
   Share2,
   Trophy,
   Ruler,
+  FileSpreadsheet,
+  Volume2,
 } from "lucide-react";
 import Link from "next/link";
 import { useUiStore } from "@/stores/useUiStore";
@@ -31,6 +33,8 @@ export function AppHeader() {
   const openDrawer = useUiStore((s) => s.openDrawer);
   const openGarageModal = useUiStore((s) => s.openGarageModal);
   const openShopPrintsModal = useUiStore((s) => s.openShopPrintsModal);
+  const openBudgetModal = useUiStore((s) => s.openBudgetModal);
+  const openAudioModal = useUiStore((s) => s.openAudioModal);
 
   const resetAllToOem = useBuildStore((s) => s.resetAllToOem);
   const slots = useBuildStore((s) => s.slots);
@@ -188,7 +192,29 @@ export function AppHeader() {
           title="Реальные чертежи 1:1, ведомость болтов с моментами затяжки и распиновки ЭБУ"
         >
           <Ruler className="size-3.5 text-cyan-400" />
-          <span className="hidden sm:inline">IRL Чертежи & BOM</span>
+          <span className="hidden sm:inline">IRL Чертежи</span>
+        </button>
+
+        {/* Build Budget Quotation Button */}
+        <button
+          type="button"
+          onClick={openBudgetModal}
+          className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 sm:px-2.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/60 transition-all cursor-pointer active:scale-95 shadow-sm shadow-emerald-950/20"
+          title="Смета постройки и бюджет проекта в южнокорейских вонах (견적서)"
+        >
+          <FileSpreadsheet className="size-3.5 text-emerald-400" />
+          <span className="hidden sm:inline">Смета ₩</span>
+        </button>
+
+        {/* Engine Audio Synthesizer Button */}
+        <button
+          type="button"
+          onClick={openAudioModal}
+          className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-orange-500/40 bg-orange-500/10 px-2 sm:px-2.5 text-[11px] font-bold text-orange-300 hover:bg-orange-500/20 hover:border-orange-500/60 transition-all cursor-pointer active:scale-95 shadow-sm shadow-orange-950/20"
+          title="Синтезатор звука выхлопа и мотора (엔진 사운드)"
+        >
+          <Volume2 className="size-3.5 text-orange-400" />
+          <span className="hidden sm:inline">Звук ДВС</span>
         </button>
 
         {/* Share Build URL Button */}

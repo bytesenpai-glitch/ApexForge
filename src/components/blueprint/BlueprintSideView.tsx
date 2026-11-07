@@ -523,6 +523,31 @@ export function BlueprintSideView({
             </text>
           </g>
         )}
+
+        {/* --- LAYER 9: GROUND CLEARANCE & DRIVELINE PINION ANGLE --- */}
+        {layers.dimensions && (
+          <g id="side-ground-and-pinion">
+            {/* Ground Plane line */}
+            <line x1="120" y1="410" x2="880" y2="410" stroke="#334155" strokeWidth="1.5" strokeDasharray="6 3" />
+            <text x="880" y="405" textAnchor="end" fill="#64748b" fontSize="8" fontFamily="monospace">GROUND PLANE (도로면)</text>
+
+            {/* Clearance dimension arrow */}
+            <line x1="500" y1="410" x2="500" y2={410 - effectiveClearance * 0.25} stroke="#38bdf8" strokeWidth="1.5" />
+            <polygon points="500,410 497,404 503,404" fill="#38bdf8" />
+            <polygon points={`500,${410 - effectiveClearance * 0.25} 497,${416 - effectiveClearance * 0.25} 503,${416 - effectiveClearance * 0.25}`} fill="#38bdf8" />
+            <text x="508" y={410 - effectiveClearance * 0.12} fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace">
+              지상고: {effectiveClearance}mm {dropMm > 0 ? `(-${dropMm}mm Coilovers)` : ""}
+            </text>
+
+            {/* Driveline Pinion Angle annotation */}
+            <g transform="translate(560, 345)">
+              <rect x="0" y="0" width="135" height="18" rx="3" fill="#0f172a" stroke="#0ea5e9" strokeWidth="0.8" opacity="0.9" />
+              <text x="6" y="12" fill="#7dd3fc" fontSize="7.5" fontWeight="bold" fontFamily="monospace">
+                PINION ANGLE: 2.1° ISO (정상)
+              </text>
+            </g>
+          </g>
+        )}
       </svg>
     </div>
   );

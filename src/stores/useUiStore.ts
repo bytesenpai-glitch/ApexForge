@@ -13,6 +13,8 @@ interface UiState {
   expandedManuals: Record<string, boolean>;
   isGarageModalOpen: boolean;
   isShopPrintsModalOpen: boolean;
+  isBudgetModalOpen: boolean;
+  isAudioModalOpen: boolean;
 
   setViewMode: (mode: ViewMode) => void;
   openDrawer: (slot: PartSlotKind) => void;
@@ -27,6 +29,10 @@ interface UiState {
   closeGarageModal: () => void;
   openShopPrintsModal: () => void;
   closeShopPrintsModal: () => void;
+  openBudgetModal: () => void;
+  closeBudgetModal: () => void;
+  openAudioModal: () => void;
+  closeAudioModal: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -39,6 +45,8 @@ export const useUiStore = create<UiState>((set) => ({
   expandedManuals: {},
   isGarageModalOpen: false,
   isShopPrintsModalOpen: false,
+  isBudgetModalOpen: false,
+  isAudioModalOpen: false,
 
   setViewMode: (viewMode) => set({ viewMode }),
   openDrawer: (slot) => set({ activeDrawerSlot: slot, drawerSearch: "", drawerFitment: "all" }),
@@ -52,6 +60,10 @@ export const useUiStore = create<UiState>((set) => ({
   closeGarageModal: () => set({ isGarageModalOpen: false }),
   openShopPrintsModal: () => set({ isShopPrintsModalOpen: true }),
   closeShopPrintsModal: () => set({ isShopPrintsModalOpen: false }),
+  openBudgetModal: () => set({ isBudgetModalOpen: true }),
+  closeBudgetModal: () => set({ isBudgetModalOpen: false }),
+  openAudioModal: () => set({ isAudioModalOpen: true }),
+  closeAudioModal: () => set({ isAudioModalOpen: false }),
   toggleManual: (id) =>
     set((state) => ({
       expandedManuals: {

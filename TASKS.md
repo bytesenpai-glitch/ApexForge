@@ -72,5 +72,13 @@
   - [x] Add trigger buttons in `AppHeader`, `VehicleSpecsCard`, and `BlueprintCanvas`.
   - [x] Verify 34/34 passing unit tests, zero TS errors, and Turbopack production build.
 
+- [x] **Task 12: Build Budget (KRW ₩), Web Audio Engine Sound & 2D CAD 2.5 Enhancements**
+  - [x] Expand vehicle catalog with Lancer Evo IX MR, Civic Type R EK9, GR Yaris RZ, Porsche 911 GT3 (992), BMW M3 E92 V8, Audi RS5 B8, Mercedes C63 AMG W204, Shelby GT350, Corvette C6 Z06.
+  - [x] Implement Build Budget & Quotation service (`calculateBuildBudget`) with South Korean Won (`₩`) formatting and official invoice standards (`BuildBudgetModal.tsx`).
+  - [x] Create procedural Web Audio Engine Synthesizer (`audioEngineService.ts`) with custom cylinder firing orders, exhaust filters, BOV flutter, and 2-step anti-lag (`EngineAudioModal.tsx`).
+  - [x] Enhance 2D CAD Blueprint with exhaust system downpipe & muffler routing, 1000mm ISO scale bar, ground clearance dimensions, and driveline pinion angle.
+  - [x] Verify zero TypeScript errors (`tsc --noEmit`), 36/36 passing unit tests, and successful Turbopack build.
+
+
 
 

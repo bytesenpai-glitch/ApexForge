@@ -644,6 +644,30 @@ export function BlueprintTopView({
           </g>
         )}
 
+        {/* --- LAYER 7.5: PERFORMANCE EXHAUST ROUTING --- */}
+        {layers.plumbing && (
+          <g id="node-exhaust" className="cursor-pointer" onClick={() => onNodeClick("exhaust")}>
+            {/* Downpipe from engine manifold */}
+            <path
+              d={isTransverse ? "M 310 240 Q 325 360 320 440 L 320 620 Q 320 680 340 730 L 340 765" : "M 325 260 Q 340 380 325 440 L 325 620 Q 325 680 340 730 L 340 765"}
+              fill="none"
+              stroke={resolved.isCustomExhaust ? "#f97316" : "#64748b"}
+              strokeWidth={resolved.exhaust?.pipeDiameterMm ? Math.max(3, resolved.exhaust.pipeDiameterMm / 18) : 4}
+              strokeLinecap="round"
+            />
+            {/* Midpipe Resonator */}
+            <rect x="313" y="490" width="18" height="45" rx="5" fill="#1e293b" stroke={resolved.isCustomExhaust ? "#fb923c" : "#94a3b8"} strokeWidth="1.5" />
+            {/* Rear Muffler Silencer Box */}
+            <rect x="305" y="710" width="70" height="35" rx="6" fill="#0f172a" stroke={resolved.isCustomExhaust ? "#f97316" : "#64748b"} strokeWidth="2" />
+            <text x="340" y="732" textAnchor="middle" fill="#fdba74" fontSize="7.5" fontWeight="bold" fontFamily="monospace">
+              {resolved.exhaust ? `${resolved.exhaust.pipeDiameterMm}mm` : "OEM EXHAUST"}
+            </text>
+            {/* Dual Exhaust Tips */}
+            <rect x="315" y="750" width="10" height="20" rx="3" fill="#cbd5e1" stroke="#38bdf8" strokeWidth="1" />
+            <rect x="355" y="750" width="10" height="20" rx="3" fill="#cbd5e1" stroke="#38bdf8" strokeWidth="1" />
+          </g>
+        )}
+
         {/* --- LAYER 8: DYNAMIC CENTER OF GRAVITY (CG) RETICLE --- */}
         {layers.dimensions && (
           <g id="cg-reticle" transform={`translate(300, ${cgY})`}>
@@ -656,6 +680,19 @@ export function BlueprintTopView({
             <text x="25" y="4" fill="#fb7185" fontSize="10" fontWeight="bold" fontFamily="monospace">
               CG: {telemetry.frontWeightPct}% F : {telemetry.rearWeightPct}% R
             </text>
+          </g>
+        )}
+
+        {/* --- LAYER 9: CAD METRIC SCALE RULER (1000mm) --- */}
+        {layers.dimensions && (
+          <g id="cad-scale-bar" transform="translate(40, 755)">
+            <rect x="0" y="0" width="120" height="8" fill="#0f172a" stroke="#475569" strokeWidth="0.8" />
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#38bdf8" strokeWidth="2" />
+            <line x1="60" y1="0" x2="60" y2="8" stroke="#94a3b8" strokeWidth="1" />
+            <line x1="120" y1="0" x2="120" y2="8" stroke="#38bdf8" strokeWidth="2" />
+            <text x="0" y="-3" fill="#94a3b8" fontSize="7" fontFamily="monospace">0m</text>
+            <text x="60" y="-3" fill="#94a3b8" fontSize="7" textAnchor="middle" fontFamily="monospace">0.5m</text>
+            <text x="120" y="-3" fill="#38bdf8" fontSize="7" textAnchor="end" fontFamily="monospace">1.0m (1000mm ISO)</text>
           </g>
         )}
       </svg>

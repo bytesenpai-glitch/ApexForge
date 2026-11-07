@@ -5,7 +5,7 @@ import { getEngine, getTransmission, getDriveline } from "@/domain/parts/swap";
 import { useVehicleStore } from "@/stores/useVehicleStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { BRAND_LABELS, LAYOUT_LABELS, REGION_LABELS } from "@/constants/tuning";
-import { Layers, Tag, ChevronDown, ChevronUp, Ruler } from "lucide-react";
+import { Layers, Tag, ChevronDown, ChevronUp, Ruler, FileSpreadsheet } from "lucide-react";
 
 export function VehicleSpecsCard() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -13,6 +13,7 @@ export function VehicleSpecsCard() {
   const selectedVehicleId = useVehicleStore((s) => s.selectedVehicleId);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const openShopPrintsModal = useUiStore((s) => s.openShopPrintsModal);
+  const openBudgetModal = useUiStore((s) => s.openBudgetModal);
 
   const vehicle = useMemo(() => {
     return vehicles.find((v) => v.id === selectedVehicleId) ?? vehicles[0];
@@ -67,11 +68,20 @@ export function VehicleSpecsCard() {
 
           <button
             onClick={openShopPrintsModal}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-950/40"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-950/40"
             title="Открыть чертежи деталей 1:1, ведомость крепежа и распиновку"
           >
             <Ruler className="w-4 h-4" />
-            <span>IRL Лекала & BOM</span>
+            <span>IRL Лекала</span>
+          </button>
+
+          <button
+            onClick={openBudgetModal}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-colors shadow-lg shadow-emerald-950/40"
+            title="Смета постройки и бюджет проекта в южнокорейских вонах (견적서)"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Смета ₩</span>
           </button>
         </div>
       </div>
