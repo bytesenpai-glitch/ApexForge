@@ -21,7 +21,7 @@ export default function RootLayout({
         <AppHeader />
 
         {/* Main Content Area */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 w-full max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
           {children}
         </main>
 
@@ -30,7 +30,7 @@ export default function RootLayout({
 
         {/* Footer */}
         <footer className="w-full border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="max-w-[1536px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-300">APEX FORGE</span>
               <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono font-semibold">

@@ -18,6 +18,7 @@ import { computeVehicleTelemetry } from "@/services/telemetryService";
 import { analyzeBuildSynergy, type EngineeringAdvice } from "@/services/engineeringAdvisorService";
 
 export function EngineeringAdvisor() {
+  const [isExpanded, setIsExpanded] = React.useState(false);
   const vehicles = useVehicleStore((s) => s.vehicles);
   const selectedVehicleId = useVehicleStore((s) => s.selectedVehicleId);
   const slots = useBuildStore((s) => s.slots);
@@ -54,9 +55,9 @@ export function EngineeringAdvisor() {
   const warningCount = advices.filter((a) => a.severity === "warning").length;
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 backdrop-blur space-y-3">
-      {/* Header with status badges */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80">
+    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 backdrop-blur space-y-2.5">
+      {/* Header with status badges & collapse toggle */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             <Zap className="w-4 h-4" />
@@ -94,11 +95,20 @@ export function EngineeringAdvisor() {
               Баланс подтвержден
             </span>
           )}
+
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-[11px] font-mono text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 transition-colors cursor-pointer"
+          >
+            {isExpanded ? "Свернуть ▲" : `Подробнее (${advices.length}) ▼`}
+          </button>
         </div>
       </div>
 
-      {/* Advice Cards List */}
-      <div className="space-y-2.5">
+      {/* Advice Cards List (expandable) */}
+      {isExpanded && (
+        <div className="space-y-2.5 pt-2 border-t border-slate-800/80 animate-fadeIn">
         {advices.map((advice) => {
           let cardBorder = "border-slate-800 bg-slate-950/60";
           let icon = <Lightbulb className="w-4 h-4 text-cyan-400" />;
@@ -156,6 +166,7 @@ export function EngineeringAdvisor() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

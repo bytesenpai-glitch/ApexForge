@@ -26,8 +26,8 @@ export function VehicleSpecsCard() {
   return (
     <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 backdrop-blur space-y-3">
       {/* Top Banner & Title */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
               {REGION_LABELS[vehicle.region]}
@@ -40,16 +40,16 @@ export function VehicleSpecsCard() {
             </span>
           </div>
 
-          <h2 className="text-lg sm:text-xl font-black text-white tracking-tight mt-1">
+          <h2 className="text-lg sm:text-xl font-black text-white tracking-tight mt-1 truncate">
             {BRAND_LABELS[vehicle.brand] ?? vehicle.brand} {vehicle.model} {vehicle.trim}
-            <span className="text-xs font-normal text-slate-400 ml-2">({vehicle.generation})</span>
+            <span className="text-xs font-normal text-slate-400 ml-2 font-mono">({vehicle.generation})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
             Компоновка: {LAYOUT_LABELS[vehicle.layout]} · Кузов: {vehicle.body.toUpperCase()}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
