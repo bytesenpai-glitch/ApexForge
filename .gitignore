@@ -6,3 +6,6 @@ out/
 .DS_Store
 .vercel/
 at-sim/
+
+.vercel
+.env*
