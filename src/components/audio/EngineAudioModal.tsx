@@ -30,6 +30,49 @@ import { resolveEngineFiringOrder } from "@/domain/parts/firingOrders";
 import { inferCylinderLayout } from "@/domain/parts/swap";
 import { FiringOrderVisualizer } from "./FiringOrderVisualizer";
 
+function computeTargetIdleRpm(engine: {
+  cylinders: number;
+  cylinderLayout?: string;
+  displacementCc?: number;
+  family?: string;
+  code?: string;
+  redlineRpm?: number;
+}): { target: number; jitterRange: number } {
+  const layout = engine.cylinderLayout ?? "inline";
+  const cyl = engine.cylinders;
+  const f = (engine.family || "").toLowerCase();
+  const c = (engine.code || "").toLowerCase();
+  const redline = engine.redlineRpm ?? 7000;
+
+  // 1. Rotary Wankel (13B-REW, 20B-REW)
+  if (layout === "rotary" || f.includes("rotary") || c.includes("13b") || c.includes("20b")) {
+    return { target: 940, jitterRange: 42 };
+  }
+
+  // 2. High-Revving Race N/A Engines (S85 V10, GT3 Flat-6, S65 V8, S54 I6, F20C, Voodoo 5.2)
+  if (redline >= 8000 || cyl === 10 || cyl === 12 || c.includes("voodoo")) {
+    return { target: 880, jitterRange: 36 };
+  }
+
+  // 3. Large American V8s (LS3, LT1, LT4, 392 Hemi, Hellcat, Coyote 5.0)
+  if (cyl === 8 && layout === "v-engine") {
+    return { target: 680, jitterRange: 32 };
+  }
+
+  // 4. Subaru Boxer-4 (EJ257, FA24D)
+  if (layout === "boxer" && cyl === 4) {
+    return { target: 780, jitterRange: 35 };
+  }
+
+  // 5. Inline-6 (2JZ, RB26, B58, S58)
+  if (layout === "inline" && cyl === 6) {
+    return { target: 760, jitterRange: 20 };
+  }
+
+  // 6. Standard 4-cylinder Turbo (K24, 4G63, Theta II, EA888)
+  return { target: 800, jitterRange: 26 };
+}
+
 export function EngineAudioModal() {
   const isOpen = useUiStore((s) => s.isAudioModalOpen);
   const closeModal = useUiStore((s) => s.closeAudioModal);
@@ -60,7 +103,24 @@ export function EngineAudioModal() {
   }, [vehicle, slots]);
 
   const redline = resolved?.engine.redlineRpm ?? 7000;
-  const idleRpm = 850;
+  const layout = useMemo(() => {
+    return resolved ? inferCylinderLayout(resolved.engine) : "inline";
+  }, [resolved]);
+
+  const idleConfig = useMemo(() => {
+    if (!resolved) return { target: 800, jitterRange: 28 };
+    return computeTargetIdleRpm({
+      cylinders: resolved.engine.cylinders,
+      cylinderLayout: layout,
+      displacementCc: resolved.engine.displacementCc,
+      family: resolved.engine.family,
+      code: resolved.engine.code,
+      redlineRpm: resolved.engine.redlineRpm,
+    });
+  }, [resolved, layout]);
+
+  const idleRpm = idleConfig.target;
+  const idleJitter = idleConfig.jitterRange;
   const hasTurbo = resolved?.turbo !== null || (resolved?.engine.aspiration !== "na");
   const displacementLiters = resolved?.engine.displacementCc
     ? Number((resolved.engine.displacementCc / 1000).toFixed(1))
@@ -132,6 +192,9 @@ export function EngineAudioModal() {
   const flywheelRef = useRef(flywheelType);
   flywheelRef.current = flywheelType;
 
+  const isChopIdleRef = useRef(isChopIdle);
+  isChopIdleRef.current = isChopIdle;
+
   // Real-world Drivetrain & Flywheel Inertia Differential Physics Loop
   useEffect(() => {
     if (!isPlaying) return;
@@ -187,7 +250,23 @@ export function EngineAudioModal() {
         }
       } else {
         const dropRate = isNeutral ? (isLightFlywheel ? 2600 : 1900) : 1200;
-        currentLocalRpm = Math.max(idleRpm, currentLocalRpm - dropRate * dt);
+        if (currentLocalRpm > idleRpm + 25) {
+          currentLocalRpm = Math.max(idleRpm, currentLocalRpm - dropRate * dt);
+        } else {
+          // Real-world Idle Hunting: Closed-loop O2 lambda oscillation + cylinder-to-cylinder combustion variance
+          const tSec = now / 1000;
+          const lambdaWave = Math.sin(tSec * 5.4) * (idleJitter * 0.45);
+          const secondaryWave = Math.sin(tSec * 10.8 + 1.2) * (idleJitter * 0.25);
+          const microJitter = (Math.random() * 2 - 1) * (idleJitter * 0.35);
+
+          let chopWave = 0;
+          if (isChopIdleRef.current) {
+            chopWave = Math.sin(tSec * 17.5) * 85 + (Math.random() * 40 - 20);
+          }
+
+          const targetHunting = idleRpm + lambdaWave + secondaryWave + microJitter + chopWave;
+          currentLocalRpm += (targetHunting - currentLocalRpm) * Math.min(1, dt * 14);
+        }
       }
 
       const finalRpm = Math.round(currentLocalRpm);
@@ -202,7 +281,7 @@ export function EngineAudioModal() {
 
     animId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animId);
-  }, [isPlaying, redline, idleRpm, hasTurbo, rpm]);
+  }, [isPlaying, redline, idleRpm, idleJitter, hasTurbo, rpm]);
 
   // Global Keyboard Driving Controls: [Space / W] = Gas, [B] = 2-Step, [S] = Blow-off flutter
   useEffect(() => {

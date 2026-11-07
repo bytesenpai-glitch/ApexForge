@@ -482,7 +482,7 @@ class ProceduralEngineAudio {
   }
 
   public setRpm(rpm: number) {
-    const clamped = Math.max(700, Math.min(this.config.redlineRpm, rpm));
+    const clamped = Math.max(550, Math.min(this.config.redlineRpm, rpm));
     const previousRpm = this.currentRpm;
     this.currentRpm = clamped;
 
