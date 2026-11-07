@@ -79,6 +79,21 @@
   - [x] Enhance 2D CAD Blueprint with exhaust system downpipe & muffler routing, 1000mm ISO scale bar, ground clearance dimensions, and driveline pinion angle.
   - [x] Verify zero TypeScript errors (`tsc --noEmit`), 36/36 passing unit tests, and successful Turbopack build.
 
+- [x] **Task 13: Acoustic Waveguide Physical Modeling & Animated Firing Order Engine**
+  - [x] Rebuild `audioEngineService.ts` with Stanford CCRMA Digital Waveguide (14.2ms delay line with phase reflection and lowpass damping), discrete combustion puff pulses, and MAF flow turbulence.
+  - [x] Implement driver perspective switch: `cockpit` (in-cabin floorpan rumble & induction roar), `tailpipe` (exterior rasp & pops), `engine-bay` (valvetrain clatter & turbo whistle).
+  - [x] Integrate real rotational flywheel inertia differential: neutral mode (2.0s rev-up) vs in-gear dyno load (4.5s rev-up with progressive turbo boost gauge up to 1.75 bar).
+  - [x] Implement `firingOrders.ts` domain service and unit tests (47/47 tests pass).
+  - [x] Implement `FiringOrderVisualizer.tsx` with live 720° crankshaft angle synchronization, bank geometry (Inline, V-Engine, Boxer), and live 4-stroke cycle phasing (Power, Exhaust, Intake, Compression).
+
+- [x] **Task 14: 2D CAD Blueprint 3.0, Model Silhouettes & Interactive Component Inspector HUD**
+  - [x] Add authentic SVG CAD vector silhouettes in `modelSilhouettes.ts` for Nissan Skyline GT-R BNR34, BMW M3 E46, Mazda RX-7 FD3S, Ford Mustang S550/Shelby, Genesis G70 3.3T Sport, Mitsubishi Evo IX, Porsche GT3 992, Corvette C6 Z06, Civic Type R EK9, Toyota GR Yaris.
+  - [x] Add mechanical subassemblies in Top and Side views: Front-Mount Intercooler (FMIC) with mandrel-bent charge piping, Steering Rack & tie-rods, Front Anti-Roll Sway Bar, and Performance Fuel Cell with dual in-tank fuel pumps and -8AN PTFE braided lines.
+  - [x] Implement `CadInspectorHud.tsx` interactive component inspection card showing part title, bilingual terminology, material composition (Billet 6061-T6, Inconel 718, SUS304, etc.), technical tolerances, fitment tier badge, quick configure/reset actions, and 1-click Engine Audio Dyno trigger.
+  - [x] Add SVG glow reticle and node hover/active states across Top and Side CAD views.
+  - [x] Verify zero TypeScript errors (`tsc --noEmit`), 47/47 passing tests, Next.js 16 Turbopack production build, and deploy to Vercel production (`https://apexforge-sigma.vercel.app`).
+
+
 
 
 
