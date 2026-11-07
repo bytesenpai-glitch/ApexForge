@@ -29,6 +29,8 @@ import {
   type FlywheelType,
   type AudioPerspective,
 } from "@/services/audioEngineService";
+import { resolveEngineFiringOrder } from "@/domain/parts/firingOrders";
+import { FiringOrderVisualizer } from "./FiringOrderVisualizer";
 
 export function EngineAudioModal() {
   const isOpen = useUiStore((s) => s.isAudioModalOpen);
@@ -66,6 +68,16 @@ export function EngineAudioModal() {
   const displacementLiters = resolved?.engine.displacementCc
     ? Number((resolved.engine.displacementCc / 1000).toFixed(1))
     : 2.0;
+
+  const firingOrderSpec = useMemo(() => {
+    if (!resolved) return null;
+    return resolveEngineFiringOrder(
+      resolved.engine.cylinderLayout ?? "inline",
+      resolved.engine.cylinders,
+      resolved.engine.family,
+      resolved.engine.code
+    );
+  }, [resolved]);
 
   // Sync audio engine configuration whenever vehicle or parts change
   useEffect(() => {
@@ -383,6 +395,16 @@ export function EngineAudioModal() {
               style={{ width: `${isPlaying ? rpmPercent : 0}%` }}
             />
           </div>
+
+          {/* Interactive Live Cylinder Firing Order Visualizer */}
+          {firingOrderSpec && (
+            <FiringOrderVisualizer
+              spec={firingOrderSpec}
+              rpm={rpm}
+              isPlaying={isPlaying}
+              is2StepActive={is2StepActive}
+            />
+          )}
 
           {/* Audio Perspective Switcher (Cockpit vs Tailpipe vs Engine Bay) */}
           <div className="w-full max-w-lg bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-2">
