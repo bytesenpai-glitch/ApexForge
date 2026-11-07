@@ -64,4 +64,13 @@
   - [x] Eradicate barrel files (`src/domain/parts/index.ts`, `src/domain/vehicles/index.ts`) and dead demo file (`demo.ts`).
   - [x] Verify zero TypeScript errors (`tsc --noEmit`), 31/31 passing unit tests, and successful Turbopack production build.
 
+- [x] **Task 11: IRL Shop Prints & Hardware BOM System**
+  - [x] Create hardware types (`FastenerItem`, `ClearanceItem`, `WiringPinoutItem`, `FabricationTemplate`, `IRLSwapGuide`).
+  - [x] Implement authentic engineering database (`KNOWN_SWAP_GUIDES`) with K-Miata, LS-Silvia, 2JZ-Genesis, DAZA-Golf, and dynamic fallback generator.
+  - [x] Build ISO-standard 1:1 scale SVG template generator with 100mm physical calibration bar.
+  - [x] Implement interactive `ShopPrintsModal.tsx` with 5 shop tabs: 1:1 CAD Prints, Fasteners BOM & Torque Specs, Clearances, Wiring Matrix, and Tools Checklist.
+  - [x] Add trigger buttons in `AppHeader`, `VehicleSpecsCard`, and `BlueprintCanvas`.
+  - [x] Verify 34/34 passing unit tests, zero TS errors, and Turbopack production build.
+
+
 

@@ -12,6 +12,7 @@ interface UiState {
   toastMessage: string | null;
   expandedManuals: Record<string, boolean>;
   isGarageModalOpen: boolean;
+  isShopPrintsModalOpen: boolean;
 
   setViewMode: (mode: ViewMode) => void;
   openDrawer: (slot: PartSlotKind) => void;
@@ -24,6 +25,8 @@ interface UiState {
   toggleManual: (id: string) => void;
   openGarageModal: () => void;
   closeGarageModal: () => void;
+  openShopPrintsModal: () => void;
+  closeShopPrintsModal: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -35,6 +38,7 @@ export const useUiStore = create<UiState>((set) => ({
   toastMessage: null,
   expandedManuals: {},
   isGarageModalOpen: false,
+  isShopPrintsModalOpen: false,
 
   setViewMode: (viewMode) => set({ viewMode }),
   openDrawer: (slot) => set({ activeDrawerSlot: slot, drawerSearch: "", drawerFitment: "all" }),
@@ -46,6 +50,8 @@ export const useUiStore = create<UiState>((set) => ({
   clearToast: () => set({ toastMessage: null }),
   openGarageModal: () => set({ isGarageModalOpen: true }),
   closeGarageModal: () => set({ isGarageModalOpen: false }),
+  openShopPrintsModal: () => set({ isShopPrintsModalOpen: true }),
+  closeShopPrintsModal: () => set({ isShopPrintsModalOpen: false }),
   toggleManual: (id) =>
     set((state) => ({
       expandedManuals: {

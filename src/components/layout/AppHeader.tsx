@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   Share2,
   Trophy,
+  Ruler,
 } from "lucide-react";
 import Link from "next/link";
 import { useUiStore } from "@/stores/useUiStore";
@@ -29,6 +30,7 @@ export function AppHeader() {
   const showToast = useUiStore((s) => s.showToast);
   const openDrawer = useUiStore((s) => s.openDrawer);
   const openGarageModal = useUiStore((s) => s.openGarageModal);
+  const openShopPrintsModal = useUiStore((s) => s.openShopPrintsModal);
 
   const resetAllToOem = useBuildStore((s) => s.resetAllToOem);
   const slots = useBuildStore((s) => s.slots);
@@ -176,6 +178,17 @@ export function AppHeader() {
           <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-200">
             {savedBuilds.length}
           </span>
+        </button>
+
+        {/* IRL Shop Prints & Fastener BOM Button */}
+        <button
+          type="button"
+          onClick={openShopPrintsModal}
+          className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2 sm:px-2.5 text-[11px] font-bold text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-500/60 transition-all cursor-pointer active:scale-95 shadow-sm shadow-cyan-950/20"
+          title="Реальные чертежи 1:1, ведомость болтов с моментами затяжки и распиновки ЭБУ"
+        >
+          <Ruler className="size-3.5 text-cyan-400" />
+          <span className="hidden sm:inline">IRL Чертежи & BOM</span>
         </button>
 
         {/* Share Build URL Button */}

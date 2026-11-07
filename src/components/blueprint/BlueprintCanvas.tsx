@@ -14,6 +14,7 @@ import {
   FileCode,
   Image as ImageIcon,
   FileText,
+  Ruler,
 } from "lucide-react";
 import { useVehicleStore } from "@/stores/useVehicleStore";
 import { useBuildStore } from "@/stores/useBuildStore";
@@ -84,6 +85,7 @@ export function BlueprintCanvas() {
 
   const openDrawer = useUiStore((s) => s.openDrawer);
   const showToast = useUiStore((s) => s.showToast);
+  const openShopPrintsModal = useUiStore((s) => s.openShopPrintsModal);
 
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [cadMode, setCadMode] = useState<CadVisualMode>("dark-cad");
@@ -350,6 +352,16 @@ export function BlueprintCanvas() {
               <span className="hidden sm:inline">Штамп</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={openShopPrintsModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-500/50 bg-cyan-500/15 text-xs font-bold text-cyan-300 hover:bg-cyan-500/25 transition-all cursor-pointer shadow-sm shadow-cyan-950/40"
+            title="Открыть чертежи деталей 1:1, ведомость крепежа с моментами и распиновку ЭБУ"
+          >
+            <Ruler className="w-3.5 h-3.5 text-cyan-400" />
+            <span>IRL Чертежи & BOM</span>
+          </button>
 
           <button
             type="button"
